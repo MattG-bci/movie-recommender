@@ -4,11 +4,11 @@ from typing import Tuple, List
 import os
 
 
-def request_movie_data(target_page: str) -> List:
+def request_movie_data(target_page: str) -> List[Tuple[str, float]]:
     html_response = get(target_page)
     soup = BeautifulSoup(html_response.content, features="html.parser")
     pages_div = soup.find("div", class_="paginate-pages")
-    n_pages: int = int(pages_div.find_all("li", class_="paginate-page")[-1].text)
+    n_pages = int(pages_div.find_all("li", class_="paginate-page")[-1].text)
 
     all_movie_data: List[Tuple[str, float]] = []
     for id_page in range(1, n_pages + 1):
@@ -18,11 +18,11 @@ def request_movie_data(target_page: str) -> List:
         get_movie_rating(soup, all_movie_data)
     return all_movie_data
 
-def get_movie_rating(soup: BeautifulSoup, all_movie_data: List) -> None:
+def get_movie_rating(soup: BeautifulSoup, all_movie_data: List[Tuple[str, float]]) -> None:
     poster_containers = soup.find_all("li", class_="poster-container")
     for poster in poster_containers:
         movie_title = poster.find("img")["alt"]
-        rating = poster.find("span", class_="rating").text
+        rating: str = poster.find("span", class_="rating").text
         num_rating = convert_rating(rating)
         all_movie_data.append((movie_title, num_rating))
 
@@ -31,5 +31,5 @@ def convert_rating(rating: str) -> float:
     return num_rating * 2
 
 if __name__ == "__main__":
-    target_page = "https://letterboxd.com/mattstouche/films/"
+    target_page: str = "https://letterboxd.com/mattstouche/films/"
     print(request_movie_data(target_page))
