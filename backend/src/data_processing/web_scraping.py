@@ -3,28 +3,50 @@ from requests import get
 from typing import Tuple, List
 import os
 
+from requests.exceptions import RequestException
 
-def request_usernames(usernames_page: str) -> List:
-    username_response = get(usernames_page)
+
+def request_usernames(usernames_page: str) -> List[str]:
+    try:
+        username_response = get(usernames_page)
+    except:
+        raise RequestException
+
     soup = BeautifulSoup(username_response.content, features="html.parser")
-
     pagination = soup.find("div", class_="pagination")
     is_next = True if pagination.find("a", class_="next") else False
-    id_page = 1
+    id_page: int = 1
     usernames: List[str] = []
     while is_next or id_page == 1:
+        get_usernames(soup, usernames)
         id_page += 1
-        next_page_postfix = f"page/{id_page}"
+        next_page_postfix: str = f"page/{id_page}"
         next_page_address = os.path.join(username_page, next_page_postfix)
         username_response = get(next_page_address)
         soup = BeautifulSoup(username_response.content, features="html.parser")
         pagination = soup.find("div", class_="pagination")
         is_next = True if pagination.find("a", class_="next") else False
-
+        break
     return usernames
 
+def get_usernames(soup: BeautifulSoup, usernames: List[str]) -> None:
+    usrs = soup.find_all("div", class_="person-summary")
+    for usr in usrs:
+        # TODO: Actually true usernames are displayed in the href. Change that accordingly in the code.
+        usr = usr.find("a", class_="name").text
+        user_split = usr.split(" ")
+        print(" ".join(user_split[1:len(user_split)-1]))
+        # TODO: Consider whether this can be optimised
+        if usr not in usernames:
+            usernames.append(usr)
+    return
+
 def request_movie_data(target_page: str) -> List[Tuple[str, float]]:
-    html_response = get(target_page)
+    try:
+        html_response = get(target_page)
+    except:
+        raise RequestException
+
     soup = BeautifulSoup(html_response.content, features="html.parser")
     pages_div = soup.find("div", class_="paginate-pages")
     n_pages = int(pages_div.find_all("li", class_="paginate-page")[-1].text)
@@ -44,6 +66,7 @@ def get_movie_rating(soup: BeautifulSoup, all_movie_data: List[Tuple[str, float]
         rating: str = poster.find("span", class_="rating").text
         num_rating = convert_rating(rating)
         all_movie_data.append((movie_title, num_rating))
+    return
 
 def convert_rating(rating: str) -> float:
     num_rating = float(len(rating)) if rating[-1] != "½" else len(rating) - 0.5
