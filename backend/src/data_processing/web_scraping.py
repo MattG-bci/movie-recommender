@@ -4,6 +4,25 @@ from typing import Tuple, List
 import os
 
 
+def request_usernames(usernames_page: str) -> List:
+    username_response = get(usernames_page)
+    soup = BeautifulSoup(username_response.content, features="html.parser")
+
+    pagination = soup.find("div", class_="pagination")
+    is_next = True if pagination.find("a", class_="next") else False
+    id_page = 1
+    usernames: List[str] = []
+    while is_next or id_page == 1:
+        id_page += 1
+        next_page_postfix = f"page/{id_page}"
+        next_page_address = os.path.join(username_page, next_page_postfix)
+        username_response = get(next_page_address)
+        soup = BeautifulSoup(username_response.content, features="html.parser")
+        pagination = soup.find("div", class_="pagination")
+        is_next = True if pagination.find("a", class_="next") else False
+
+    return usernames
+
 def request_movie_data(target_page: str) -> List[Tuple[str, float]]:
     html_response = get(target_page)
     soup = BeautifulSoup(html_response.content, features="html.parser")
@@ -32,4 +51,6 @@ def convert_rating(rating: str) -> float:
 
 if __name__ == "__main__":
     target_page: str = "https://letterboxd.com/mattstouche/films/"
-    print(request_movie_data(target_page))
+    username_page: str = "https://letterboxd.com/members/popular/this/week/"
+    #print(request_movie_data(target_page))
+    print(request_usernames(username_page))
