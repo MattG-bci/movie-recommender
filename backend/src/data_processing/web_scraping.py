@@ -32,13 +32,8 @@ def request_usernames(usernames_page: str) -> List[str]:
 def get_usernames(soup: BeautifulSoup, usernames: List[str]) -> None:
     usrs = soup.find_all("div", class_="person-summary")
     for usr in usrs:
-        # TODO: Actually true usernames are displayed in the href. Change that accordingly in the code.
-        usr = usr.find("a", class_="name").text
-        user_split = usr.split(" ")
-        print(" ".join(user_split[1:len(user_split)-1]))
-        # TODO: Consider whether this can be optimised
-        if usr not in usernames:
-            usernames.append(usr)
+        usr = usr.find("a", class_="name")["href"].split("/")[1]
+        usernames.append(usr)
     return
 
 def request_movie_data(target_page: str) -> List[Tuple[str, float]]:
