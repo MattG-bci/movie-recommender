@@ -6,6 +6,7 @@ from requests.exceptions import RequestException
 from typing import Tuple, List
 
 import os
+import logging
 
 
 class WebScraper(ABC):
@@ -38,7 +39,6 @@ class UserScraper(WebScraper):
             soup = BeautifulSoup(username_response.content, features="html.parser")
             pagination = soup.find("div", class_="pagination")
             is_next = True if pagination.find("a", class_="next") else False
-            break
         return usernames
 
     def get_data(self, soup: BeautifulSoup, usernames: List[str]) -> None:
@@ -56,8 +56,13 @@ class RatingScraper(WebScraper):
             raise RequestException
 
         soup = BeautifulSoup(html_response.content, features="html.parser")
-        pages_div = soup.find("div", class_="paginate-pages")
-        n_pages = int(pages_div.find_all("li", class_="paginate-page")[-1].text)
+
+        try:
+            pages_div = soup.find("div", class_="paginate-pages")
+            n_pages = int(pages_div.find_all("li", class_="paginate-page")[-1].text)
+        except AttributeError:
+            logging.warning("Number of pages not available. Setting the parameter to 1.")
+            n_pages = 1
 
         all_movie_data: List[Tuple[str, float]] = []
         for id_page in range(1, n_pages + 1):
@@ -71,8 +76,10 @@ class RatingScraper(WebScraper):
         poster_containers = soup.find_all("li", class_="poster-container")
         for poster in poster_containers:
             movie_title = poster.find("img")["alt"]
-            rating: str = poster.find("span", class_="rating").text
-            num_rating = self.convert_rating(rating)
+            rating: str = poster.find("span", class_="rating")
+            if not rating:
+                continue
+            num_rating = self.convert_rating(rating.text)
             all_movie_data.append((movie_title, num_rating))
         return
 

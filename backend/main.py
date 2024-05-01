@@ -1,18 +1,23 @@
 from src.data_processing.web_scraping import UserScraper, RatingScraper
-
-
-#target_page: str = "https://letterboxd.com/mattstouche/films/"
-#username_page: str = "https://letterboxd.com/members/popular/this/week/"
-####
-#usr_scraper = UserScraper()
-#usernames = usr_scraper.request_data(username_page)
-#print(usernames)
-####
-#movie_scraper = RatingScraper()
-#movie_ratings = movie_scraper.request_data(target_page)
-#print(movie_ratings)
-
-from src.data_processing.infer_db_pd import init_db
+from src.data_processing.infer_db_pd import transform_data
+from src.data_processing.infer_db_pd import load_db, append_data_samples, save_db
 from config import config
 
-init_db()
+
+username_page: str = "https://letterboxd.com/members/popular/this/week/"
+####
+usr_scraper = UserScraper()
+usernames = usr_scraper.request_data(username_page)
+usernames = usernames[:31]
+####
+df = load_db()
+for idx, usr in enumerate(usernames):
+    print(f"User #{idx}: {usr}")
+    target_page: str = f"https://letterboxd.com/{usr}/films/"
+    movie_scraper = RatingScraper()
+    movie_ratings = movie_scraper.request_data(target_page)
+    data = transform_data(usr, movie_ratings)
+    if len(data.keys()) <= 1:
+        continue
+    df = append_data_samples(data, df)
+    save_db(df)
