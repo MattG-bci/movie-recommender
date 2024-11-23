@@ -1,5 +1,6 @@
 *DS_Store
 backend/db/pandas_db.parquet
+.*
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
