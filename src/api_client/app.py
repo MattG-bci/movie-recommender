@@ -4,21 +4,24 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
-from src.data_processing.infer_db_pd import load_db
-from utils.config import config
+from src.ingestion.infer_db_pd import load_db
 from json import loads
 
 
 app = FastAPI()
 df = load_db()
 
+
 @app.get("/")
 async def root():
-    return JSONResponse(content={
-        "date": datetime.datetime.now().isoformat(),
-        "name": "Jeff",
-        "occupation": "Student"
-    })
+    return JSONResponse(
+        content={
+            "date": datetime.datetime.now().isoformat(),
+            "name": "Jeff",
+            "occupation": "Student",
+        }
+    )
+
 
 @app.get("/data")
 async def display_data():

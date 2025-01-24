@@ -1,12 +1,12 @@
 import mysql.connector
 import os
-import json
+
 
 mydb = mysql.connector.connect(
-  host="localhost",
-  user=os.environ["USER"],
-  password=os.environ["PASSWORD"],
-  database="mysql"
+    host="localhost",
+    user=os.environ["USER"],
+    password=os.environ["PASSWORD"],
+    database="mysql",
 )
 
 cursor = mydb.cursor()
@@ -40,7 +40,9 @@ cursor.execute(insert_user_query, (user_name,))
 cursor.execute("SELECT LAST_INSERT_ID()")
 user_id = cursor.fetchone()[0]
 
-insert_rating_query = "INSERT INTO ratings (user_id, movie_name, rating) VALUES (%s, %s, %s)"
+insert_rating_query = (
+    "INSERT INTO ratings (user_id, movie_name, rating) VALUES (%s, %s, %s)"
+)
 cursor.execute(insert_rating_query, (user_id, movie_name, rating))
 
 mydb.commit()

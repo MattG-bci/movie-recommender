@@ -18,12 +18,13 @@ class WebScraper(ABC):
     def get_data(self, scraper, store) -> None:
         raise NotImplementedError
 
+
 class UserScraper(WebScraper):
     def request_data(self, usernames_page: str) -> List[str]:
         try:
             username_response = get(usernames_page)
-        except:
-            raise RequestException
+        except RequestException:
+            return []
 
         soup = BeautifulSoup(username_response.content, features="html.parser")
         pagination = soup.find("div", class_="pagination")
@@ -48,12 +49,13 @@ class UserScraper(WebScraper):
             usernames.append(usr)
         return
 
+
 class RatingScraper(WebScraper):
     def request_data(self, target_page: str) -> List[Tuple[str, float]]:
         try:
             html_response = get(target_page)
-        except:
-            raise RequestException
+        except RequestException:
+            return []
 
         soup = BeautifulSoup(html_response.content, features="html.parser")
 
@@ -61,7 +63,9 @@ class RatingScraper(WebScraper):
             pages_div = soup.find("div", class_="paginate-pages")
             n_pages = int(pages_div.find_all("li", class_="paginate-page")[-1].text)
         except AttributeError:
-            logging.warning("Number of pages not available. Setting the parameter to 1.")
+            logging.warning(
+                "Number of pages not available. Setting the parameter to 1."
+            )
             n_pages = 1
 
         all_movie_data: List[Tuple[str, float]] = []
@@ -72,7 +76,9 @@ class RatingScraper(WebScraper):
             self.get_data(soup, all_movie_data)
         return all_movie_data
 
-    def get_data(self, soup: BeautifulSoup, all_movie_data: List[Tuple[str, float]]) -> None:
+    def get_data(
+        self, soup: BeautifulSoup, all_movie_data: List[Tuple[str, float]]
+    ) -> None:
         poster_containers = soup.find_all("li", class_="poster-container")
         for poster in poster_containers:
             movie_title = poster.find("img")["alt"]
