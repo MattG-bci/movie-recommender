@@ -4,6 +4,7 @@ version = "0.1.0"
 description = ""
 authors = ["Mateusz Grzybowski"]
 readme = "README.md"
+packages = [{include = "src"}]
 
 [tool.poetry.dependencies]
 python = "^3.9"
@@ -14,6 +15,7 @@ uvicorn = "^0.34.0"
 scikit-learn = "^1.6.1"
 bs4 = "^0.0.2"
 requests = "^2.32.3"
+httpx = "^0.28.1"
 
 
 [build-system]

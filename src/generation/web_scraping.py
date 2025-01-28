@@ -9,7 +9,7 @@ import os
 import logging
 
 
-class WebScraper(ABC):
+class BaseWebScraper(ABC):
     @abstractmethod
     def request_data(self, url: str) -> List:
         raise NotImplementedError
@@ -19,7 +19,7 @@ class WebScraper(ABC):
         raise NotImplementedError
 
 
-class UserScraper(WebScraper):
+class UserScraper(BaseWebScraper):
     def request_data(self, usernames_page: str) -> List[str]:
         try:
             username_response = get(usernames_page)
@@ -40,6 +40,7 @@ class UserScraper(WebScraper):
             soup = BeautifulSoup(username_response.content, features="html.parser")
             pagination = soup.find("div", class_="pagination")
             is_next = True if pagination.find("a", class_="next") else False
+            break
         return usernames
 
     def get_data(self, soup: BeautifulSoup, usernames: List[str]) -> None:
@@ -50,7 +51,7 @@ class UserScraper(WebScraper):
         return
 
 
-class RatingScraper(WebScraper):
+class RatingScraper(BaseWebScraper):
     def request_data(self, target_page: str) -> List[Tuple[str, float]]:
         try:
             html_response = get(target_page)
@@ -82,13 +83,14 @@ class RatingScraper(WebScraper):
         poster_containers = soup.find_all("li", class_="poster-container")
         for poster in poster_containers:
             movie_title = poster.find("img")["alt"]
-            rating: str = poster.find("span", class_="rating")
+            rating = poster.find("span", class_="rating")
             if not rating:
                 continue
             num_rating = self.convert_rating(rating.text)
             all_movie_data.append((movie_title, num_rating))
         return
 
-    def convert_rating(self, rating: str) -> float:
+    @staticmethod
+    def convert_rating(rating: str) -> float:
         num_rating = float(len(rating)) if rating[-1] != "½" else len(rating) - 0.5
         return num_rating * 2
