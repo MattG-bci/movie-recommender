@@ -1,2 +1,3 @@
 %syntax-version=1.0.0
-%project=flipr
+%project=movie-recommender
+%uri=https://github.com/MattG-bci/movie-recommender
