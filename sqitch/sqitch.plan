@@ -1,3 +1,5 @@
 %syntax-version=1.0.0
 %project=movie-recommender
 %uri=https://github.com/MattG-bci/movie-recommender
+
+29012025_create_initial_schema 2025-01-29T22:54:30Z Matt <root@Mateuszs-MacBook-Pro.local> # Adding initial sql queries to create a sketch of tables
