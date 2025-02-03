@@ -1,6 +1,11 @@
+from urllib.request import Request
+
 from bs4 import BeautifulSoup
 
 from abc import ABC, abstractmethod
+
+from httpx import Response
+from pydantic import BaseModel
 from requests import get
 from requests.exceptions import RequestException
 from typing import Tuple, List
@@ -15,40 +20,47 @@ class BaseWebScraper(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def get_data(self, scraper, store) -> None:
+    def get_data(self, scraper) -> None:
         raise NotImplementedError
 
 
-class UserScraper(BaseWebScraper):
-    def request_data(self, usernames_page: str) -> List[str]:
+class UserScraper(BaseModel, BaseWebScraper):
+    username_page: str
+
+    def scrape_pages(self, start_page: int = 1, end_page: int = 11) -> list[str]:
+        usernames = []
+        for page in range(start_page, end_page):
+            username_url = f"{self.username_page}/page/{page}/"
+            usernames += self.get_usernames_for_page(username_url)
+        return usernames
+
+
+    def get_usernames_for_page(self, username_url: str) -> list[str]:
+        response = self.request_data(username_url)
+        soup = BeautifulSoup(response.content, features="html.parser")
+        usernames = self.get_data(soup)
+        return self.remove_duplicates(usernames)
+
+
+    def request_data(self, usernames_page: str) -> Response:
         try:
             username_response = get(usernames_page)
         except RequestException:
-            return []
+            raise RequestException("Error in the request to the usernames page.")
+        return username_response
 
-        soup = BeautifulSoup(username_response.content, features="html.parser")
-        pagination = soup.find("div", class_="pagination")
-        is_next = True if pagination.find("a", class_="next") else False
-        id_page: int = 1
-        usernames: List[str] = []
-        while is_next or id_page == 1:
-            self.get_data(soup, usernames)
-            id_page += 1
-            next_page_postfix: str = f"page/{id_page}"
-            next_page_address = os.path.join(usernames_page, next_page_postfix)
-            username_response = get(next_page_address)
-            soup = BeautifulSoup(username_response.content, features="html.parser")
-            pagination = soup.find("div", class_="pagination")
-            is_next = True if pagination.find("a", class_="next") else False
-            break
+
+    def get_data(self, soup: BeautifulSoup) -> list[str]:
+        usernames = []
+        users = soup.find_all("div", class_="person-summary")
+        for user in users:
+            user = user.find("a", class_="name")["href"].split("/")[1]
+            usernames.append(user)
         return usernames
 
-    def get_data(self, soup: BeautifulSoup, usernames: List[str]) -> None:
-        usrs = soup.find_all("div", class_="person-summary")
-        for usr in usrs:
-            usr = usr.find("a", class_="name")["href"].split("/")[1]
-            usernames.append(usr)
-        return
+    @staticmethod
+    def remove_duplicates(usernames: list[str]) -> list[str]:
+        return list(set(usernames))
 
 
 class RatingScraper(BaseWebScraper):
