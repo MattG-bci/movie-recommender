@@ -1,5 +1,3 @@
-from urllib.request import Request
-
 from bs4 import BeautifulSoup
 
 from abc import ABC, abstractmethod
