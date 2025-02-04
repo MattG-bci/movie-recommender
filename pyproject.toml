@@ -19,6 +19,7 @@ httpx = "^0.28.1"
 python-dotenv = "^1.0.1"
 asyncpg = "^0.30.0"
 asyncio = "^3.4.3"
+pathlib = "^1.0.1"
 
 
 [build-system]

@@ -797,6 +797,17 @@ files = [
 ]
 
 [[package]]
+name = "pathlib"
+version = "1.0.1"
+description = "Object-oriented filesystem paths"
+optional = false
+python-versions = "*"
+files = [
+    {file = "pathlib-1.0.1-py3-none-any.whl", hash = "sha256:f35f95ab8b0f59e6d354090350b44a80a80635d22efdedfa84c7ad1cf0a74147"},
+    {file = "pathlib-1.0.1.tar.gz", hash = "sha256:6940718dfc3eff4258203ad5021090933e5c04707d5ca8cc9e73c94a7894ea9f"},
+]
+
+[[package]]
 name = "polars"
 version = "1.20.0"
 description = "Blazingly fast DataFrame library"
@@ -1313,4 +1324,4 @@ standard = ["colorama (>=0.4)", "httptools (>=0.6.3)", "python-dotenv (>=0.13)",
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "1064d63a805b480d3efa93e1855c7378990144c923bd3515fb73c95e29ad18b4"
+content-hash = "9c1e99303aed6ae93346eb72141e755f128bae572d03e9bf5677bdaeacefc22c"
