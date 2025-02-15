@@ -19,8 +19,11 @@ jobs:
       # Checkout the code as the first step.
       - checkout
       - run:
-          name: "Say hello"
-          command: "echo Hello, World!"
+          name: "Install Poetry"
+          command: curl -sSL https://install.python-poetry.org | python3 -
+      - run:
+            name: "Install dependencies"
+            command: poetry install
       - run:
           name: "Testing"
           command: poetry run pytest tests
