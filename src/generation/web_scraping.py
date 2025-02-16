@@ -32,13 +32,11 @@ class UserScraper(BaseModel, BaseWebScraper):
             usernames += self.get_usernames_for_page(username_url)
         return usernames
 
-
     def get_usernames_for_page(self, username_url: str) -> list[str]:
         response = self.request_data(username_url)
         soup = BeautifulSoup(response.content, features="html.parser")
         usernames = self.get_data(soup)
         return self.remove_duplicates(usernames)
-
 
     def request_data(self, usernames_page: str) -> Response:
         try:
@@ -46,7 +44,6 @@ class UserScraper(BaseModel, BaseWebScraper):
         except RequestException:
             raise RequestException("Error in the request to the usernames page.")
         return username_response
-
 
     def get_data(self, soup: BeautifulSoup) -> list[str]:
         usernames = []
