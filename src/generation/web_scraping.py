@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from requests import get
 from requests.exceptions import RequestException
 from typing import Tuple, List
+from settings import RATINGS_PAGE
 
 import os
 import logging
@@ -14,11 +15,11 @@ import logging
 
 class BaseWebScraper(ABC):
     @abstractmethod
-    def request_data(self, url: str) -> List:
+    def request_data(self, url: str) -> Response:
         raise NotImplementedError
 
     @abstractmethod
-    def get_data(self, scraper) -> None:
+    def get_data(self, scraper: BeautifulSoup) -> None:
         raise NotImplementedError
 
 
@@ -58,14 +59,26 @@ class UserScraper(BaseModel, BaseWebScraper):
         return list(set(usernames))
 
 
-class RatingScraper(BaseWebScraper):
-    def request_data(self, target_page: str) -> List[Tuple[str, float]]:
+class RatingScraper(BaseModel, BaseWebScraper):
+    username_urls: list[str]
+
+    def request_data(self, target_page: str) -> Response:
         try:
             html_response = get(target_page)
         except RequestException:
-            return []
+            raise RequestException("Error in the request to the usernames page.")
+        return html_response
 
-        soup = BeautifulSoup(html_response.content, features="html.parser")
+    def scrape_data(self) -> dict[str, list[tuple[str, float]]]:
+        all_movie_data = {}
+        for username_url in self.username_urls:
+            target_page = f"{RATINGS_PAGE}{username_url}/films/"
+            all_movie_data[username_url] = self.scrape_data_per_username_url(target_page)
+        return all_movie_data
+
+    def scrape_data_per_username_url(self, username_url: str) -> List[Tuple[str, float]]:
+        response = self.request_data(username_url)
+        soup = BeautifulSoup(response.content, features="html.parser")
 
         try:
             pages_div = soup.find("div", class_="paginate-pages")
@@ -76,17 +89,17 @@ class RatingScraper(BaseWebScraper):
             )
             n_pages = 1
 
-        all_movie_data: List[Tuple[str, float]] = []
+        all_movie_data: list[tuple[str, float]] = []
         for id_page in range(1, n_pages + 1):
-            next_page: str = os.path.join(target_page, f"page/{id_page}")
+            next_page: str = os.path.join(username_url, f"page/{id_page}")
             html_response = get(next_page)
             soup = BeautifulSoup(html_response.content, features="html.parser")
-            self.get_data(soup, all_movie_data)
+            movie_data = self.get_data(soup)
+            all_movie_data.extend(movie_data)
         return all_movie_data
 
-    def get_data(
-        self, soup: BeautifulSoup, all_movie_data: List[Tuple[str, float]]
-    ) -> None:
+    def get_data(self, soup: BeautifulSoup) -> list[tuple[str, float]]:
+        movie_ratings = []
         poster_containers = soup.find_all("li", class_="poster-container")
         for poster in poster_containers:
             movie_title = poster.find("img")["alt"]
@@ -94,8 +107,8 @@ class RatingScraper(BaseWebScraper):
             if not rating:
                 continue
             num_rating = self.convert_rating(rating.text)
-            all_movie_data.append((movie_title, num_rating))
-        return
+            movie_ratings.append((movie_title, num_rating))
+        return movie_ratings
 
     @staticmethod
     def convert_rating(rating: str) -> float:
