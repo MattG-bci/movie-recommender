@@ -25,8 +25,11 @@ jobs:
             name: "Install dependencies"
             command: poetry install
       - run:
-          name: "Linting"
-          command: curl -LsSf https://astral.sh/ruff/install.sh | sh | poetry run ruff format src tests --check | poetry run ruff format src tests
+          name: "Install Linting"
+          command: curl -LsSf https://astral.sh/ruff/install.sh | sh
+      - run:
+            name: "Linting"
+            command: poetry run ruff format src tests --check | poetry run ruff format src tests
       - run:
           name: "Testing"
           command: poetry run pytest tests
