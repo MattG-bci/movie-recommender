@@ -8,7 +8,9 @@ def generate_usernames(username_page: str) -> list[str]:
     return usernames
 
 
-def generate_movie_ratings(username_urls: list[str]) -> dict[str, list[tuple[str, float]]]:
+def generate_movie_ratings(
+    username_urls: list[str],
+) -> dict[str, list[tuple[str, float]]]:
     rating_scraper = RatingScraper(username_urls=username_urls)
     movie_data = rating_scraper.scrape_data()
     return movie_data
@@ -16,6 +18,7 @@ def generate_movie_ratings(username_urls: list[str]) -> dict[str, list[tuple[str
 
 if __name__ == "__main__":
     import logging
+
     logging.info("Generating username data")
     usernames = generate_usernames(username_page=USERNAME_PAGE)
     print(usernames)

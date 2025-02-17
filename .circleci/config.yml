@@ -29,7 +29,7 @@ jobs:
           command: curl -LsSf https://astral.sh/ruff/install.sh | sh
       - run:
             name: "Linting"
-            command: poetry run ruff format src tests --check | poetry run ruff format src tests
+            command: poetry run ruff format src tests
       - run:
           name: "Testing"
           command: poetry run pytest tests

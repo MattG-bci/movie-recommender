@@ -73,10 +73,14 @@ class RatingScraper(BaseModel, BaseWebScraper):
         all_movie_data = {}
         for username_url in self.username_urls:
             target_page = f"{RATINGS_PAGE}{username_url}/films/"
-            all_movie_data[username_url] = self.scrape_data_per_username_url(target_page)
+            all_movie_data[username_url] = self.scrape_data_per_username_url(
+                target_page
+            )
         return all_movie_data
 
-    def scrape_data_per_username_url(self, username_url: str) -> List[Tuple[str, float]]:
+    def scrape_data_per_username_url(
+        self, username_url: str
+    ) -> List[Tuple[str, float]]:
         response = self.request_data(username_url)
         soup = BeautifulSoup(response.content, features="html.parser")
 
