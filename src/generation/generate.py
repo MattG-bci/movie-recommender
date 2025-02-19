@@ -9,20 +9,18 @@ def generate_usernames(username_page: str) -> list[str]:
     return usernames
 
 
-def generate_movie_ratings(
+async def generate_movie_ratings(
     username_urls: list[str],
 ) -> dict[str, list[tuple[str, float]]]:
     rating_scraper = RatingScraper(username_urls=username_urls)
-    movie_data = asyncio.run(rating_scraper.scrape_data())
+    movie_data = await rating_scraper.scrape_data()
     return movie_data
 
 
 if __name__ == "__main__":
-    import logging
-
-    logging.info("Generating username data")
+    print("Generating username data")
     usernames = generate_usernames(username_page=USERNAME_PAGE)
     print(usernames)
-    logging.info("Generating movie data")
-    movies = generate_movie_ratings(username_urls=usernames)
+    print("Generating movie data")
+    movies = asyncio.run(generate_movie_ratings(username_urls=usernames))
     print(movies)

@@ -8,10 +8,11 @@ from requests import get
 from requests.exceptions import RequestException
 from typing import Tuple, List
 
-from settings import RATINGS_PAGE
+import aiolimiter
+import httpx
+import asyncio
 
 import os
-import logging
 
 
 class BaseWebScraper(ABC):
@@ -62,55 +63,46 @@ class UserScraper(BaseModel, BaseWebScraper):
 
 class RatingScraper(BaseModel, BaseWebScraper):
     username_urls: list[str]
+    limiter: aiolimiter.AsyncLimiter = aiolimiter.AsyncLimiter(600)
 
-    async def request_data(self, target_page: str) -> Response:
-        try:
-            html_response = get(target_page)
-        except RequestException:
-            raise RequestException("Error in the request to the usernames page.")
-        return html_response
+    model_config = dict(arbitrary_types_allowed=True)
+
+    async def request_data(self, target_page: str) -> httpx.Response:
+        async with httpx.AsyncClient(follow_redirects=True, timeout=httpx.Timeout(10.0, connect=60.0)) as client:
+            async with self.limiter:
+                try:
+                    response = await client.get(target_page)
+                    response.raise_for_status()
+                except httpx.RequestError as exc:
+                    raise Exception(f"Error in the request to {target_page}.") from exc
+        return response
 
     async def scrape_data(self) -> dict[str, list[tuple[str, float]]]:
-        all_movie_data = {}
-        for username_url in self.username_urls:
-            target_page = os.path.join(RATINGS_PAGE, username_url, "films")
-            all_movie_data[username_url] = await self.scrape_data_per_username_url(
-                target_page
-            )
-        return all_movie_data
+        tasks = [self.scrape_data_per_username_url(username_url) for username_url in self.username_urls]
+        results = await asyncio.gather(*tasks)
+        return dict(zip(self.username_urls, results))
 
-    async def scrape_data_per_username_url(
-        self, username_url: str
-    ) -> List[Tuple[str, float]]:
-        response = await self.request_data(username_url)
+    async def scrape_data_per_username_url(self, username_url: str) -> List[Tuple[str, float]]:
+        target_page = os.path.join("https://letterboxd.com", username_url, "films")
+        response = await self.request_data(target_page)
         soup = BeautifulSoup(response.content, features="html.parser")
 
         try:
             pages_div = soup.find("div", class_="paginate-pages")
             n_pages = int(pages_div.find_all("li", class_="paginate-page")[-1].text)
         except AttributeError:
-            logging.warning(
-                "Number of pages not available. Setting the parameter to 1."
-            )
             n_pages = 1
 
-        all_movie_data: list[tuple[str, float]] = []
-        print("Scraping data for user: %s", username_url)
-        for id_page in range(1, 2 + 1):
-            next_page: str = os.path.join(username_url, "page", str(id_page))
-            print(f"Scraping data for page: {id_page} for username {username_url}")
-            movie_data = await self.fetch_data(next_page)
-            all_movie_data.extend(movie_data)
-        return all_movie_data
+        tasks = [self.fetch_data(os.path.join(target_page, "page", str(id_page))) for id_page in range(1, n_pages + 1)]
+        all_movie_data = await asyncio.gather(*tasks)
+        return [item for sublist in all_movie_data for item in sublist]
 
+    async def fetch_data(self, target_url: str) -> List[Tuple[str, float]]:
+        response = await self.request_data(target_url)
+        soup = BeautifulSoup(response.content, features="html.parser")
+        return await self.get_data(soup)
 
-    async def fetch_data(self, target_url: str) -> list[tuple[str, float]]:
-        html_response = get(target_url)
-        soup = BeautifulSoup(html_response.content, features="html.parser")
-        movie_data = await self.get_data(soup)
-        return movie_data
-
-    async def get_data(self, soup: BeautifulSoup) -> list[tuple[str, float]]:
+    async def get_data(self, soup: BeautifulSoup) -> List[Tuple[str, float]]:
         movie_ratings = []
         poster_containers = soup.find_all("li", class_="poster-container")
         for poster in poster_containers:
