@@ -26,10 +26,10 @@ class BaseWebScraper(ABC):
 class UserScraper(BaseModel, BaseWebScraper):
     username_page: str
 
-    def scrape_pages(self, start_page: int = 1, end_page: int = 11) -> list[str]:
+    def scrape_pages(self, n_pages: int = 10) -> list[str]:
         usernames = []
-        for page in range(start_page, end_page):
-            username_url = f"{self.username_page}/page/{page}/"
+        for page in range(1, n_pages + 1):
+            username_url = os.path.join(self.username_page, "page", str(page))
             usernames += self.get_usernames_for_page(username_url)
         return usernames
 
@@ -72,7 +72,7 @@ class RatingScraper(BaseModel, BaseWebScraper):
     def scrape_data(self) -> dict[str, list[tuple[str, float]]]:
         all_movie_data = {}
         for username_url in self.username_urls:
-            target_page = f"{RATINGS_PAGE}{username_url}/films/"
+            target_page = os.path.join(RATINGS_PAGE, username_url, "films")
             all_movie_data[username_url] = self.scrape_data_per_username_url(
                 target_page
             )
@@ -95,7 +95,7 @@ class RatingScraper(BaseModel, BaseWebScraper):
 
         all_movie_data: list[tuple[str, float]] = []
         for id_page in range(1, n_pages + 1):
-            next_page: str = os.path.join(username_url, f"page/{id_page}")
+            next_page: str = os.path.join(username_url, "page", str(id_page))
             html_response = get(next_page)
             soup = BeautifulSoup(html_response.content, features="html.parser")
             movie_data = self.get_data(soup)
