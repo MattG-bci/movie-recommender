@@ -5,7 +5,7 @@ import asyncio
 
 def generate_usernames(username_page: str) -> list[str]:
     usr_scraper = UserScraper(username_page_url=username_page)
-    usernames = usr_scraper.scrape_pages(n_pages=2)
+    usernames = usr_scraper.scrape_pages(n_pages=1)
     return usernames
 
 
