@@ -8,9 +8,9 @@ from requests import get
 from requests.exceptions import RequestException
 from typing import Tuple, List
 
-import aiolimiter
 import httpx
 import asyncio
+from tenacity import retry, wait_exponential
 
 import os
 
@@ -63,18 +63,17 @@ class UserScraper(BaseModel, BaseWebScraper):
 
 class RatingScraper(BaseModel, BaseWebScraper):
     username_urls: list[str]
-    limiter: aiolimiter.AsyncLimiter = aiolimiter.AsyncLimiter(600)
 
     model_config = dict(arbitrary_types_allowed=True)
 
+    @retry(wait=wait_exponential(multiplier=1, min=4, max=10))
     async def request_data(self, target_page: str) -> httpx.Response:
-        async with httpx.AsyncClient(follow_redirects=True, timeout=httpx.Timeout(10.0, connect=60.0)) as client:
-            async with self.limiter:
-                try:
-                    response = await client.get(target_page)
-                    response.raise_for_status()
-                except httpx.RequestError as exc:
-                    raise Exception(f"Error in the request to {target_page}.") from exc
+        async with httpx.AsyncClient(follow_redirects=True) as client:
+            try:
+                response = await client.get(target_page)
+                response.raise_for_status()
+            except httpx.RequestError as exc:
+                raise Exception(f"Error in the request to {target_page}.") from exc
         return response
 
     async def scrape_data(self) -> dict[str, list[tuple[str, float]]]:
@@ -93,7 +92,7 @@ class RatingScraper(BaseModel, BaseWebScraper):
         except AttributeError:
             n_pages = 1
 
-        tasks = [self.fetch_data(os.path.join(target_page, "page", str(id_page))) for id_page in range(1, n_pages + 1)]
+        tasks = [self.fetch_data(os.path.join(target_page, "page", str(page))) for page in range(1, n_pages + 1)]
         all_movie_data = await asyncio.gather(*tasks)
         return [item for sublist in all_movie_data for item in sublist]
 

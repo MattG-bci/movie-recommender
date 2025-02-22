@@ -23,6 +23,7 @@ pathlib = "^1.0.1"
 typer = "^0.15.1"
 pytest = "^8.3.4"
 aiolimiter = "^1.2.1"
+tenacity = "^9.0.0"
 
 
 [build-system]
