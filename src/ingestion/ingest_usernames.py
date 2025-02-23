@@ -1,14 +1,12 @@
-from src.settings import USERNAME_PAGE, DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT
+from src.settings import USERNAME_PAGE
 from src.generation.generate import generate_usernames
 import asyncpg
+from src.sql_queries.queries import inject_db_connection
 
 
-async def ingest_usernames() -> None:
+@inject_db_connection()
+async def ingest_usernames(conn: asyncpg.Connection) -> None:
     usernames = generate_usernames(username_page=USERNAME_PAGE)
-
-    conn = await asyncpg.connect(
-        host=DB_HOST, user=DB_USER, password=DB_PASS, database=DB_NAME, port=DB_PORT
-    )
 
     for username in usernames:
         await conn.execute(

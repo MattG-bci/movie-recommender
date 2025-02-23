@@ -69,7 +69,7 @@ class UserScraper(BaseWebScraper):
 
 
 class RatingScraper(BaseWebScraper):
-    username_urls: list[str]
+    usernames: list[str]
 
     model_config = dict(arbitrary_types_allowed=True)
 
