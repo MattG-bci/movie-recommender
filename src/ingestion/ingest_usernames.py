@@ -4,7 +4,7 @@ import asyncpg
 from src.sql_queries.queries import inject_db_connection
 
 
-@inject_db_connection()
+@inject_db_connection
 async def ingest_usernames(conn: asyncpg.Connection) -> None:
     usernames = generate_usernames(username_page=USERNAME_PAGE)
 
