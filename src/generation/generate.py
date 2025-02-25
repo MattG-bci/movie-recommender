@@ -1,9 +1,10 @@
+from schemas.users import UserIn
 from src.generation.web_scraping import UserScraper, RatingScraper
 from settings import USERNAME_PAGE
 import asyncio
 
 
-def generate_usernames(username_page: str) -> list[str]:
+def generate_usernames(username_page: str) -> list[UserIn]:
     usr_scraper = UserScraper(username_page_url=username_page)
     usernames = usr_scraper.scrape_pages(n_pages=1)
     return usernames

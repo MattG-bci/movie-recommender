@@ -15,6 +15,7 @@ from tenacity import retry, wait_exponential
 import os
 import itertools
 
+from schemas.users import UserIn
 from settings import RATINGS_PAGE
 
 
@@ -31,11 +32,13 @@ class BaseWebScraper(ABC, BaseModel):
 class UserScraper(BaseWebScraper):
     username_page_url: str
 
-    def scrape_pages(self, n_pages: int = 10) -> list[str]:
+    def scrape_pages(self, n_pages: int = 10) -> list[UserIn]:
         usernames = []
         for page in range(1, n_pages + 1):
             username_url = os.path.join(self.username_page_url, "page", str(page))
             usernames += self.get_usernames_for_page(username_url)
+
+        usernames = [UserIn(username=username) for username in usernames]
         return usernames
 
 
