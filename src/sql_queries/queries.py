@@ -1,3 +1,5 @@
+import logging
+from datetime import datetime
 
 import asyncpg
 from pydantic import BaseModel
@@ -8,7 +10,7 @@ from src.settings import DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT
 
 
 class DatabaseConnector(BaseModel):
-    conn: asyncpg.Connection = None
+    connection: asyncpg.Connection = None
     host: str
     user: str
     password: str
@@ -18,11 +20,11 @@ class DatabaseConnector(BaseModel):
     model_config = dict(arbitrary_types_allowed=True)
 
     async def __aenter__(self) -> asyncpg.Connection:
-        self.conn = await asyncpg.connect(host=self.host, user=self.user, password=self.password, database=self.database, port=self.port)
-        return self.conn
+        self.connection = await asyncpg.connect(host=self.host, user=self.user, password=self.password, database=self.database, port=self.port)
+        return self.connection
 
     async def __aexit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
-        await self.conn.close()
+        await self.connection.close()
 
 
 def inject_db_connection(func) -> Callable:
@@ -33,5 +35,20 @@ def inject_db_connection(func) -> Callable:
     return inner_wrapper
 
 
-def upsert_to_db():
-    pass
+async def upsert_usernames(usernames: list[str]) -> None:
+    logging.info(f"Upserting {len(usernames)} usernames to the database...")
+
+    for username in usernames:
+        await upsert_to_db(username, "users")
+
+
+@inject_db_connection
+async def upsert_to_db(conn: asyncpg.Connection, data_to_upsert: str, table_name: str) -> None:
+    now = datetime.now()
+    await conn.execute(
+        f"""
+            INSERT INTO {table_name} (username) VALUES ($1)
+            ON CONFLICT (username) DO UPDATE SET updated_at = $2
+        """,
+        data_to_upsert, now
+    )
