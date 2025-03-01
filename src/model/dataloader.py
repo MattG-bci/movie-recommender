@@ -1,5 +1,5 @@
 import torch
-from utils.classes import Singleton
+from src.utils.classes import Singleton
 
 
 class MovieDataloader(torch.utils.data.Dataset, metaclass=Singleton):

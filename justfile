@@ -1,5 +1,5 @@
 test:
-    pytest tests/
+    pytest -n 4 tests/
 
 lint:
     poetry run ruff format src/ tests/
