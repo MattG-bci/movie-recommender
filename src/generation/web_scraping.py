@@ -41,13 +41,11 @@ class UserScraper(BaseWebScraper):
         usernames = [UserIn(username=username) for username in usernames]
         return usernames
 
-
     def get_usernames_for_page(self, username_url: str) -> list[str]:
         response = self.request_data(username_url)
         soup = BeautifulSoup(response.content, features="html.parser")
         usernames = self.get_data(soup)
         return self.remove_duplicates(usernames)
-
 
     def request_data(self, usernames_page: str) -> Response:
         try:
@@ -56,7 +54,6 @@ class UserScraper(BaseWebScraper):
             raise RequestException("Error in the request to the usernames page.")
         return username_response
 
-
     def get_data(self, soup: BeautifulSoup) -> list[str]:
         usernames = []
         users = soup.find_all("div", class_="person-summary")
@@ -64,7 +61,6 @@ class UserScraper(BaseWebScraper):
             user = user.find("a", class_="name")["href"].split("/")[1]
             usernames.append(user)
         return usernames
-
 
     @staticmethod
     def remove_duplicates(usernames: list[str]) -> list[str]:
@@ -86,14 +82,17 @@ class RatingScraper(BaseWebScraper):
                 raise Exception(f"Error in the request to {target_page}.") from exc
         return response
 
-
     async def scrape_data(self) -> dict[str, list[tuple[str, float]]]:
-        tasks = [self.scrape_data_per_username(username_url) for username_url in self.username_urls]
+        tasks = [
+            self.scrape_data_per_username(username_url)
+            for username_url in self.username_urls
+        ]
         results = await asyncio.gather(*tasks)
         return dict(zip(self.username_urls, results))
 
-
-    async def scrape_data_per_username(self, username_url: str) -> List[Tuple[str, float]]:
+    async def scrape_data_per_username(
+        self, username_url: str
+    ) -> List[Tuple[str, float]]:
         target_page = os.path.join(RATINGS_PAGE, username_url, "films")
         response = await self.request_data(target_page)
         soup = BeautifulSoup(response.content, features="html.parser")
@@ -104,17 +103,21 @@ class RatingScraper(BaseWebScraper):
         except AttributeError:
             n_pages = 1
 
-        tasks = [self.get_data(os.path.join(target_page, "page", str(page))) for page in range(1, n_pages + 1)]
+        tasks = [
+            self.get_data(os.path.join(target_page, "page", str(page)))
+            for page in range(1, n_pages + 1)
+        ]
         all_movie_data = await asyncio.gather(*tasks)
         return list(itertools.chain(*all_movie_data))
-
 
     async def get_data(self, target_url: str) -> List[Tuple[str, float]]:
         response = await self.request_data(target_url)
         soup = BeautifulSoup(response.content, features="html.parser")
         return await self.scrape_movie_ratings(soup)
 
-    async def scrape_movie_ratings(self, soup: BeautifulSoup) -> List[Tuple[str, float]]:
+    async def scrape_movie_ratings(
+        self, soup: BeautifulSoup
+    ) -> List[Tuple[str, float]]:
         movie_ratings = []
         poster_containers = soup.find_all("li", class_="poster-container")
         for poster in poster_containers:

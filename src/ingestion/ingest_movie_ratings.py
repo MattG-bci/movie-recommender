@@ -6,7 +6,6 @@ import asyncpg
 async def ingest_movie_ratings(usernames: list[str]) -> None:
     movie_ratings = generate_movie_ratings(usernames=usernames)
 
-
     conn = await asyncpg.connect(
         host=DB_HOST, user=DB_USER, password=DB_PASS, database=DB_NAME, port=DB_PORT
     )

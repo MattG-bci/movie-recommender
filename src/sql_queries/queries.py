@@ -21,7 +21,13 @@ class DatabaseConnector(BaseModel):
     model_config = dict(arbitrary_types_allowed=True)
 
     async def __aenter__(self) -> asyncpg.Connection:
-        self.connection = await asyncpg.connect(host=self.host, user=self.user, password=self.password, database=self.database, port=self.port)
+        self.connection = await asyncpg.connect(
+            host=self.host,
+            user=self.user,
+            password=self.password,
+            database=self.database,
+            port=self.port,
+        )
         return self.connection
 
     async def __aexit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
@@ -30,9 +36,12 @@ class DatabaseConnector(BaseModel):
 
 def inject_db_connection(func) -> Callable:
     async def inner_wrapper(*args, **kwargs) -> Coroutine:
-        async with DatabaseConnector(host=DB_HOST, user=DB_USER, password=DB_PASS, database=DB_NAME, port=DB_PORT) as conn:
+        async with DatabaseConnector(
+            host=DB_HOST, user=DB_USER, password=DB_PASS, database=DB_NAME, port=DB_PORT
+        ) as conn:
             res = await func(conn, *args, **kwargs)
         return res
+
     return inner_wrapper
 
 
@@ -43,7 +52,9 @@ async def upsert_usernames(usernames: list[UserIn]) -> None:
 
 
 @inject_db_connection
-async def upsert_to_db(conn: asyncpg.Connection, data_to_upsert: list[BaseModel], table_name: str) -> None:
+async def upsert_to_db(
+    conn: asyncpg.Connection, data_to_upsert: list[BaseModel], table_name: str
+) -> None:
     now = datetime.now()
 
     query = f"""
@@ -52,6 +63,5 @@ async def upsert_to_db(conn: asyncpg.Connection, data_to_upsert: list[BaseModel]
     """
 
     await conn.executemany(
-        query,
-        [[*data.dict().values(), now] for data in data_to_upsert]
+        query, [[*data.dict().values(), now] for data in data_to_upsert]
     )
