@@ -39,20 +39,19 @@ def inject_db_connection(func) -> Callable:
 async def upsert_usernames(usernames: list[UserIn]) -> None:
     logging.info(f"Upserting {len(usernames)} usernames to the database...")
 
-    for username in usernames:
-        await upsert_to_db(username, "users")
+    await upsert_to_db(usernames, "users")
 
 
 @inject_db_connection
-async def upsert_to_db(conn: asyncpg.Connection, data_to_upsert: BaseModel, table_name: str) -> None:
+async def upsert_to_db(conn: asyncpg.Connection, data_to_upsert: list[BaseModel], table_name: str) -> None:
     now = datetime.now()
 
     query = f"""
-        INSERT INTO {table_name} ({" ,".join(list(data_to_upsert.dict().keys()))}) VALUES ($1)
+        INSERT INTO {table_name} ({" ,".join(list(data_to_upsert[0].dict().keys()))}) VALUES ($1)
         ON CONFLICT (username) DO UPDATE SET updated_at = $2
     """
 
-    await conn.execute(
+    await conn.executemany(
         query,
-        *data_to_upsert.dict().values(), now
+        [[*data.dict().values(), now] for data in data_to_upsert]
     )
