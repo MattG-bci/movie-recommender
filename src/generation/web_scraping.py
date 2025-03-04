@@ -6,7 +6,6 @@ from httpx import Response
 from pydantic import BaseModel
 from requests import get
 from requests.exceptions import RequestException
-from typing import Tuple, List
 
 import httpx
 import asyncio
@@ -92,7 +91,7 @@ class RatingScraper(BaseWebScraper):
 
     async def scrape_data_per_username(
         self, username_url: str
-    ) -> List[Tuple[str, float]]:
+    ) -> list[tuple[str, float]]:
         target_page = os.path.join(RATINGS_PAGE, username_url, "films")
         response = await self.request_data(target_page)
         soup = BeautifulSoup(response.content, features="html.parser")
@@ -110,14 +109,14 @@ class RatingScraper(BaseWebScraper):
         all_movie_data = await asyncio.gather(*tasks)
         return list(itertools.chain(*all_movie_data))
 
-    async def get_data(self, target_url: str) -> List[Tuple[str, float]]:
+    async def get_data(self, target_url: str) -> list[tuple[str, float]]:
         response = await self.request_data(target_url)
         soup = BeautifulSoup(response.content, features="html.parser")
         return await self.scrape_movie_ratings(soup)
 
     async def scrape_movie_ratings(
         self, soup: BeautifulSoup
-    ) -> List[Tuple[str, float]]:
+    ) -> list[tuple[str, float]]:
         movie_ratings = []
         poster_containers = soup.find_all("li", class_="poster-container")
         for poster in poster_containers:
