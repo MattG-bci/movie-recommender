@@ -11,8 +11,8 @@ def generate_usernames(username_page: str) -> list[UserIn]:
 
 
 async def generate_movie_ratings(
-    usernames: list[str],
-) -> dict[str, list[tuple[str, float]]]:
+    usernames: list[UserIn],
+) -> dict[UserIn, list[tuple[str, float]]]:
     rating_scraper = RatingScraper(usernames=usernames)
     movie_data = await rating_scraper.scrape_data()
     return movie_data

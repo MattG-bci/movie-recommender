@@ -1,7 +1,5 @@
 from bs4 import BeautifulSoup
 
-from abc import ABC, abstractmethod
-
 from httpx import Response
 from pydantic import BaseModel
 from requests import get
@@ -18,17 +16,7 @@ from schemas.users import UserIn
 from settings import RATINGS_PAGE
 
 
-class BaseWebScraper(ABC, BaseModel):
-    @abstractmethod
-    def request_data(self, url: str) -> Response:
-        raise NotImplementedError
-
-    @abstractmethod
-    def get_data(self, scraper: BeautifulSoup) -> None:
-        raise NotImplementedError
-
-
-class UserScraper(BaseWebScraper):
+class UserScraper(BaseModel):
     username_page_url: str
 
     def scrape_pages(self, n_pages: int = 10) -> list[UserIn]:
@@ -66,10 +54,8 @@ class UserScraper(BaseWebScraper):
         return list(set(usernames))
 
 
-class RatingScraper(BaseWebScraper):
-    usernames: list[str]
-
-    model_config = dict(arbitrary_types_allowed=True)
+class RatingScraper(BaseModel):
+    usernames: list[UserIn]
 
     @retry(wait=wait_exponential(multiplier=1, min=4, max=10))
     async def request_data(self, target_page: str) -> httpx.Response:
@@ -81,13 +67,13 @@ class RatingScraper(BaseWebScraper):
                 raise Exception(f"Error in the request to {target_page}.") from exc
         return response
 
-    async def scrape_data(self) -> dict[str, list[tuple[str, float]]]:
+    async def scrape_data(self) -> dict[UserIn, list[tuple[str, float]]]:
         tasks = [
-            self.scrape_data_per_username(username_url)
-            for username_url in self.username_urls
+            self.scrape_data_per_username(username.username)
+            for username in self.usernames
         ]
         results = await asyncio.gather(*tasks)
-        return dict(zip(self.username_urls, results))
+        return dict(zip(self.usernames, results))
 
     async def scrape_data_per_username(
         self, username_url: str
