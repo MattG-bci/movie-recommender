@@ -1,11 +1,10 @@
-from etl import DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT
-from etl import generate_movie_ratings
+from schemas.users import UserIn
+from etl.generation.generate import generate_movie_ratings
 import asyncpg
 
 
-async def ingest_movie_ratings(usernames: list[str]) -> None:
+async def ingest_movie_ratings(usernames: UserIn[str]) -> None:
     movie_ratings = generate_movie_ratings(usernames=usernames)
 
     conn = await asyncpg.connect(
-        host=DB_HOST, user=DB_USER, password=DB_PASS, database=DB_NAME, port=DB_PORT
     )

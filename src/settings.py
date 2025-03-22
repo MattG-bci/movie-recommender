@@ -1,14 +1,23 @@
 import os
 
 from dotenv import load_dotenv
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 load_dotenv()
 
 
-USERNAME_PAGE = os.getenv("USERNAME_PAGE")
-RATINGS_PAGE = os.getenv("RATINGS_PAGE")
-DB_HOST = os.getenv("HOST")
-DB_USER = os.getenv("USER")
-DB_PASS = os.getenv("PASS")
-DB_NAME = os.getenv("NAME")
-DB_PORT = os.getenv("PORT")
+class DBSettings(BaseSettings):
+    HOST: str
+    USER: str
+    PASS: str
+    NAME: str
+    PORT: int
+
+    model_config = SettingsConfigDict(env_prefix="DB_")
+
+
+class WebScraperSettings(BaseSettings):
+    USERNAME_PAGE: str
+    RATINGS_PAGE: str
+
+    model_config = SettingsConfigDict(env_prefix="SCRAPER_")

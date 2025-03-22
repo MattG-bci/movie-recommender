@@ -13,7 +13,10 @@ import os
 import itertools
 
 from schemas.users import UserIn
-from settings import RATINGS_PAGE
+from settings import WebScraperSettings
+
+
+RATINGS_PAGE = WebScraperSettings().RATINGS_PAGE
 
 
 class UserScraper(BaseModel):

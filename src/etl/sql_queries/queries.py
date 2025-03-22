@@ -7,26 +7,22 @@ from pydantic import BaseModel
 from typing import Any, Callable, Coroutine
 
 from schemas.users import UserIn
-from etl import DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT
+from src.settings import DBSettings
 
 
 class DatabaseConnector(BaseModel):
     connection: asyncpg.Connection = None
-    host: str
-    user: str
-    password: str
-    database: str
-    port: int
+    db_settings: DBSettings = DBSettings()
 
     model_config = dict(arbitrary_types_allowed=True)
 
     async def __aenter__(self) -> asyncpg.Connection:
         self.connection = await asyncpg.connect(
-            host=self.host,
-            user=self.user,
-            password=self.password,
-            database=self.database,
-            port=self.port,
+            host=self.db_settings.HOST,
+            user=self.db_settings.USER,
+            password=self.db_settings.PASS,
+            database=self.db_settings.NAME,
+            port=self.db_settings.PORT,
         )
         return self.connection
 
@@ -36,9 +32,7 @@ class DatabaseConnector(BaseModel):
 
 def inject_db_connection(func) -> Callable:
     async def inner_wrapper(*args, **kwargs) -> Coroutine:
-        async with DatabaseConnector(
-            host=DB_HOST, user=DB_USER, password=DB_PASS, database=DB_NAME, port=DB_PORT
-        ) as conn:
+        async with DatabaseConnector() as conn:
             res = await func(conn, *args, **kwargs)
         return res
 

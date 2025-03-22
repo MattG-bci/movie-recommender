@@ -1,6 +1,6 @@
 from schemas.users import UserIn
-from etl import UserScraper, RatingScraper
-from settings import USERNAME_PAGE
+from src.etl.generation.web_scraping import UserScraper, RatingScraper
+from src.settings import WebScraperSettings
 import asyncio
 
 
@@ -20,7 +20,8 @@ async def generate_movie_ratings(
 
 if __name__ == "__main__":
     print("Generating username data")
-    usernames = generate_usernames(username_page=USERNAME_PAGE)
+    username_page = WebScraperSettings().USERNAME_PAGE
+    usernames = generate_usernames(username_page=username_page)
     print(usernames)
     print("Generating movie data")
     movies = asyncio.run(generate_movie_ratings(usernames=usernames))
