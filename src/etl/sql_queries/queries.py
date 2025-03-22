@@ -6,7 +6,7 @@ from pydantic import BaseModel
 
 from typing import Any, Callable, Coroutine
 
-from schemas.users import UserIn
+from schemas.users import UserIn, User
 from src.settings import DBSettings
 
 
@@ -39,10 +39,21 @@ def inject_db_connection(func) -> Callable:
     return inner_wrapper
 
 
+@inject_db_connection
 async def upsert_usernames(usernames: list[UserIn]) -> None:
     logging.info(f"Upserting {len(usernames)} usernames to the database...")
 
     await upsert_to_db(usernames, "users")
+
+
+@inject_db_connection
+async def fetch_usernames_from_db() -> list[User]:
+    query = "SELECT * FROM users"
+    async with DatabaseConnector() as conn:
+        rows = await conn.fetch(query)
+
+    return [User(**row) for row in rows]
+
 
 
 @inject_db_connection

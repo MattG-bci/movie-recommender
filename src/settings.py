@@ -1,9 +1,6 @@
-import os
+import os.path
 
-from dotenv import load_dotenv
 from pydantic_settings import BaseSettings, SettingsConfigDict
-
-load_dotenv()
 
 
 class DBSettings(BaseSettings):
@@ -13,11 +10,15 @@ class DBSettings(BaseSettings):
     NAME: str
     PORT: int
 
-    model_config = SettingsConfigDict(env_prefix="DB_")
+    model_config = SettingsConfigDict(env_prefix="DB_", env_file=os.path.expanduser("../.env"), extra="ignore")
 
 
 class WebScraperSettings(BaseSettings):
     USERNAME_PAGE: str
     RATINGS_PAGE: str
 
-    model_config = SettingsConfigDict(env_prefix="SCRAPER_")
+    model_config = SettingsConfigDict(env_prefix="SCRAPER_", env_file=os.path.expanduser("../.env"), extra="ignore")
+
+if __name__ == "__main__":
+    db_settings = DBSettings()
+    print(db_settings)
