@@ -1,4 +1,4 @@
-from schemas.users import UserIn
+from schemas.users import UserIn, User
 from src.etl.generation.web_scraping import UserScraper, RatingScraper
 from src.settings import WebScraperSettings
 import asyncio
@@ -11,8 +11,8 @@ def generate_usernames(username_page: str) -> list[UserIn]:
 
 
 async def generate_movie_ratings(
-    usernames: list[UserIn],
-) -> dict[UserIn, list[tuple[str, float]]]:
+    usernames: list[User],
+) -> dict[User, list[tuple[str, float]]]:
     rating_scraper = RatingScraper(usernames=usernames)
     movie_data = await rating_scraper.scrape_data()
     return movie_data

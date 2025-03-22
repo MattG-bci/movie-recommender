@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime
+from multiprocessing.connection import Connection
 
 import asyncpg
 from pydantic import BaseModel
@@ -47,12 +48,11 @@ async def upsert_usernames(usernames: list[UserIn]) -> None:
 
 
 @inject_db_connection
-async def fetch_usernames_from_db() -> list[User]:
+async def fetch_usernames_from_db(conn: asyncpg.Connection) -> list[User]:
     query = "SELECT * FROM users"
-    async with DatabaseConnector() as conn:
-        rows = await conn.fetch(query)
+    rows = await conn.fetch(query)
 
-    return [User(**row) for row in rows]
+    return [User(**dict(row)) for row in rows]
 
 
 

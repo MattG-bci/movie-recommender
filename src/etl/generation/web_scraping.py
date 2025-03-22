@@ -12,11 +12,9 @@ from tenacity import retry, wait_exponential
 import os
 import itertools
 
-from schemas.users import UserIn
+from schemas.users import UserIn, User
 from settings import WebScraperSettings
 
-
-RATINGS_PAGE = WebScraperSettings().RATINGS_PAGE
 
 
 class UserScraper(BaseModel):
@@ -58,7 +56,7 @@ class UserScraper(BaseModel):
 
 
 class RatingScraper(BaseModel):
-    usernames: list[UserIn]
+    usernames: list[User]
 
     @retry(wait=wait_exponential(multiplier=1, min=4, max=10))
     async def request_data(self, target_page: str) -> httpx.Response:
@@ -70,7 +68,7 @@ class RatingScraper(BaseModel):
                 raise Exception(f"Error in the request to {target_page}.") from exc
         return response
 
-    async def scrape_data(self) -> dict[UserIn, list[tuple[str, float]]]:
+    async def scrape_data(self) -> dict[User, list[tuple[str, float]]]:
         tasks = [
             self.scrape_data_per_username(username.username)
             for username in self.usernames
@@ -79,9 +77,9 @@ class RatingScraper(BaseModel):
         return dict(zip(self.usernames, results))
 
     async def scrape_data_per_username(
-        self, username_url: str
+        self, username: str
     ) -> list[tuple[str, float]]:
-        target_page = os.path.join(RATINGS_PAGE, username_url, "films")
+        target_page = os.path.join(WebScraperSettings().RATINGS_PAGE, username, "films")
         response = await self.request_data(target_page)
         soup = BeautifulSoup(response.content, features="html.parser")
 
