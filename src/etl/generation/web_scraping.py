@@ -16,7 +16,6 @@ from schemas.users import UserIn, User
 from settings import WebScraperSettings
 
 
-
 class UserScraper(BaseModel):
     username_page_url: str
 
@@ -76,9 +75,7 @@ class RatingScraper(BaseModel):
         results = await asyncio.gather(*tasks)
         return dict(zip(self.usernames, results))
 
-    async def scrape_data_per_username(
-        self, username: str
-    ) -> list[tuple[str, float]]:
+    async def scrape_data_per_username(self, username: str) -> list[tuple[str, float]]:
         target_page = os.path.join(WebScraperSettings().RATINGS_PAGE, username, "films")
         response = await self.request_data(target_page)
         soup = BeautifulSoup(response.content, features="html.parser")

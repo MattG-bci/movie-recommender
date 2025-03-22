@@ -7,6 +7,7 @@ from pydantic import BaseModel
 
 from typing import Any, Callable, Coroutine
 
+from schemas.movies import MovieRating
 from schemas.users import UserIn, User
 from src.settings import DBSettings
 
@@ -40,11 +41,14 @@ def inject_db_connection(func) -> Callable:
     return inner_wrapper
 
 
-@inject_db_connection
 async def upsert_usernames(usernames: list[UserIn]) -> None:
     logging.info(f"Upserting {len(usernames)} usernames to the database...")
-
     await upsert_to_db(usernames, "users")
+
+
+async def upsert_movie_ratings(movie_ratings: list[MovieRating]) -> None:
+    logging.info(f"Upserting {len(movie_ratings)} movie ratings to the database...")
+    await upsert_to_db(movie_ratings, "movie_ratings")
 
 
 @inject_db_connection
@@ -55,13 +59,15 @@ async def fetch_usernames_from_db(conn: asyncpg.Connection) -> list[User]:
     return [User(**dict(row)) for row in rows]
 
 
-
 @inject_db_connection
 async def upsert_to_db(
     conn: asyncpg.Connection, data_to_upsert: list[BaseModel], table_name: str
 ) -> None:
-    now = datetime.now()
+    if not data_to_upsert:
+        logging.info("No data to upsert.")
+        return
 
+    now = datetime.now()
     query = f"""
         INSERT INTO {table_name} ({" ,".join(list(data_to_upsert[0].dict().keys()))}) VALUES ($1)
         ON CONFLICT (username) DO UPDATE SET updated_at = $2
