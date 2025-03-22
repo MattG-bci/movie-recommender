@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from typing import Any, Callable, Coroutine
 
 from schemas.users import UserIn
-from src.settings import DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT
+from etl import DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT
 
 
 class DatabaseConnector(BaseModel):

@@ -6,7 +6,7 @@ from pydantic import BaseModel
 class UserIn(BaseModel):
     username: str
 
-    # This is a hack to make the UserIn class hashable
+    # Uses memory address of an instance to hash it
     __hash__ = object.__hash__
 
 

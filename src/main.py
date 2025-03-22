@@ -1,5 +1,5 @@
 import typer
-from src.ingestion.ingest_usernames import ingest_usernames
+from src.etl.ingestion.ingest_usernames import ingest_usernames
 import asyncio
 
 

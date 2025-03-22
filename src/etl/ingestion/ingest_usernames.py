@@ -1,6 +1,6 @@
 from sql_queries.queries import upsert_usernames
-from src.settings import USERNAME_PAGE
-from src.generation.generate import generate_usernames
+from etl import USERNAME_PAGE
+from etl import generate_usernames
 
 
 async def ingest_usernames() -> None:

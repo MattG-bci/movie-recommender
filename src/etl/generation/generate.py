@@ -1,5 +1,5 @@
 from schemas.users import UserIn
-from src.generation.web_scraping import UserScraper, RatingScraper
+from etl import UserScraper, RatingScraper
 from settings import USERNAME_PAGE
 import asyncio
 

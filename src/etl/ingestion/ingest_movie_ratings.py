@@ -1,5 +1,5 @@
-from src.settings import DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT
-from src.generation.generate import generate_movie_ratings
+from etl import DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT
+from etl import generate_movie_ratings
 import asyncpg
 
 
