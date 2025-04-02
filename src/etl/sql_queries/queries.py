@@ -1,13 +1,12 @@
 import logging
 from datetime import datetime
-from multiprocessing.connection import Connection
 
 import asyncpg
 from pydantic import BaseModel
 
 from typing import Any, Callable, Coroutine
 
-from schemas.movies import MovieRating
+from schemas.movies import MovieRatingIn
 from schemas.users import UserIn, User
 from src.settings import DBSettings
 
@@ -46,7 +45,7 @@ async def upsert_usernames(usernames: list[UserIn]) -> None:
     await upsert_to_db(usernames, "users")
 
 
-async def upsert_movie_ratings(movie_ratings: list[MovieRating]) -> None:
+async def upsert_movie_ratings(movie_ratings: list[MovieRatingIn]) -> None:
     logging.info(f"Upserting {len(movie_ratings)} movie ratings to the database...")
     await upsert_to_db(movie_ratings, "movie_ratings")
 

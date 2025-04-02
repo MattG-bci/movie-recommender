@@ -7,14 +7,17 @@ class Movies(BaseModel):
     id: int
     title: str
     release_year: int
+    genres: list[str]
     created_at: datetime.datetime
     updated_at: datetime.datetime
 
 
-class MovieRating(BaseModel):
-    id: int
-    user_id: int
-    movie_id: int
+class MovieRatingIn(BaseModel):
+    user: str
+    movie: str
     rating: float
+
+
+class MovieRating(MovieRatingIn):
     created_at: datetime.datetime
     updated_at: datetime.datetime

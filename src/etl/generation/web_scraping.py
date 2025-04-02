@@ -12,6 +12,7 @@ from tenacity import retry, wait_exponential
 import os
 import itertools
 
+from schemas.movies import MovieRatingIn, MovieRating
 from schemas.users import UserIn, User
 from settings import WebScraperSettings
 
@@ -67,13 +68,18 @@ class RatingScraper(BaseModel):
                 raise Exception(f"Error in the request to {target_page}.") from exc
         return response
 
-    async def scrape_data(self) -> dict[User, list[tuple[str, float]]]:
+    async def scrape_data(self) -> list[MovieRatingIn]:
         tasks = [
             self.scrape_data_per_username(username.username)
             for username in self.usernames
         ]
         results = await asyncio.gather(*tasks)
-        return dict(zip(self.usernames, results))
+
+        movie_ratings = []
+        for user, user_ratings in zip(self.usernames, results):
+            for title, movie_rating in user_ratings:
+                movie_ratings.append(MovieRatingIn(user=user.username, movie=title, rating=movie_rating))
+        return movie_ratings
 
     async def scrape_data_per_username(self, username: str) -> list[tuple[str, float]]:
         target_page = os.path.join(WebScraperSettings().RATINGS_PAGE, username, "films")

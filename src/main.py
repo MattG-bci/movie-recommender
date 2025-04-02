@@ -7,7 +7,7 @@ app = typer.Typer(no_args_is_help=True)
 
 
 @app.command()
-def ingest_usrs() -> None:
+def ingest_users() -> None:
     asyncio.run(ingest_usernames())
 
 

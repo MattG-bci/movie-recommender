@@ -6,3 +6,11 @@ async def ingest_movie_ratings() -> None:
     usernames = await fetch_usernames_from_db()
     movie_ratings = await generate_movie_ratings(usernames=usernames)
     await upsert_movie_ratings(movie_ratings)
+
+
+
+
+if __name__ == "__main__":
+    import asyncio
+
+    asyncio.run(ingest_movie_ratings())
