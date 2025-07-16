@@ -1,4 +1,4 @@
-from src.model.dataloader import MovieDataloader
+from model.dataloader import MovieDataloader
 
 
 def test_singleton():

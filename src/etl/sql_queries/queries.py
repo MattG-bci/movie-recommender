@@ -8,7 +8,7 @@ from typing import Any, Callable, Coroutine
 
 from schemas.movies import MovieRatingIn
 from schemas.users import UserIn, User
-from src.settings import DBSettings
+from settings import DBSettings
 
 
 class DatabaseConnector(BaseModel):

@@ -1,6 +1,6 @@
 from torch import nn
 
-from src.model.recommender import Recommender
+from model.recommender import Recommender
 
 
 def compute_model_size(model: nn.Module) -> float:

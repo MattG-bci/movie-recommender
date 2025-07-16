@@ -1,6 +1,6 @@
 from schemas.movies import MovieRatingIn
 from schemas.users import UserIn, User
-from src.etl.generation.web_scraping import UserScraper, RatingScraper
+from etl.generation.web_scraping import UserScraper, RatingScraper
 
 
 def generate_usernames(username_page: str) -> list[UserIn]:

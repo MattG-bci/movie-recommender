@@ -1,6 +1,6 @@
-from src.etl.sql_queries.queries import upsert_usernames
-from src.settings import WebScraperSettings
-from src.etl.generation.generate import generate_usernames
+from etl.sql_queries.queries import upsert_usernames
+from settings import WebScraperSettings
+from etl.generation.generate import generate_usernames
 
 
 async def ingest_usernames() -> None:
