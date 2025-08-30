@@ -12,7 +12,7 @@ from tenacity import retry, wait_exponential
 import os
 import itertools
 
-from schemas.movies import MovieRatingIn, MovieRating
+from schemas.movies import MovieRatingIn
 from schemas.users import UserIn, User
 from settings import WebScraperSettings
 
