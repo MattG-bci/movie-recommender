@@ -12,6 +12,7 @@ from tenacity import retry, wait_exponential
 import os
 import itertools
 
+from etl.sql_queries.queries import fetch_usernames_from_db
 from schemas.movies import MovieRatingIn
 from schemas.users import UserIn, User
 from settings import WebScraperSettings
@@ -20,12 +21,20 @@ from settings import WebScraperSettings
 class UserScraper(BaseModel):
     username_page_url: str
 
-    def scrape_pages(self, n_pages: int = 10) -> list[UserIn]:
+    async def scrape_page(self) -> list[UserIn]:
         usernames = []
-        for page in range(1, n_pages + 1):
+        existing_usernames = await fetch_usernames_from_db()
+        existing_usernames = [user.username for user in existing_usernames]
+        page = 1
+        while page <= 100:
             username_url = os.path.join(self.username_page_url, "page", str(page))
-            usernames += self.get_usernames_for_page(username_url)
-
+            fetched_usernames = self.get_usernames_for_page(username_url)
+            new_usernames = list(set(existing_usernames) - set(fetched_usernames))
+            if not new_usernames:
+                page += 1
+                continue
+            usernames.extend(new_usernames)
+            break
         usernames = [UserIn(username=username) for username in usernames]
         return usernames
 
@@ -35,14 +44,16 @@ class UserScraper(BaseModel):
         usernames = self.get_data(soup)
         return self.remove_duplicates(usernames)
 
-    def request_data(self, usernames_page: str) -> Response:
+    @staticmethod
+    def request_data(usernames_page: str) -> Response:
         try:
             username_response = get(usernames_page)
         except RequestException:
             raise RequestException("Error in the request to the usernames page.")
         return username_response
 
-    def get_data(self, soup: BeautifulSoup) -> list[str]:
+    @staticmethod
+    def get_data(soup: BeautifulSoup) -> list[str]:
         usernames = []
         users = soup.find_all("div", class_="person-summary")
         for user in users:

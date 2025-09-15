@@ -3,9 +3,9 @@ from schemas.users import UserIn, User
 from etl.generation.web_scraping import UserScraper, RatingScraper
 
 
-def generate_usernames(username_page: str) -> list[UserIn]:
+async def generate_usernames(username_page: str) -> list[UserIn]:
     usr_scraper = UserScraper(username_page_url=username_page)
-    usernames = usr_scraper.scrape_pages(n_pages=1)
+    usernames = await usr_scraper.scrape_page()
     return usernames
 
 

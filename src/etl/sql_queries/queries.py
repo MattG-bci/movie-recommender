@@ -66,12 +66,13 @@ async def upsert_to_db(
         logging.info("No data to upsert.")
         return
 
-    now = datetime.now()
     query = f"""
-        INSERT INTO {table_name} ({" ,".join(list(data_to_upsert[0].dict().keys()))}) VALUES ($1)
-        ON CONFLICT (username) DO UPDATE SET updated_at = $2
+        INSERT INTO {table_name} ({" ,".join(list(data_to_upsert[0].model_dump().keys()))}) VALUES ($1)
+        ON CONFLICT (username) DO NOTHING;
     """
 
+    params = [list(data.model_dump().values()) for data in data_to_upsert]
     await conn.executemany(
-        query, [[*data.dict().values(), now] for data in data_to_upsert]
+        query,
+        params,
     )

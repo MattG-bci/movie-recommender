@@ -5,5 +5,5 @@ from etl.generation.generate import generate_usernames
 
 async def ingest_usernames() -> None:
     username_page = WebScraperSettings().USERNAME_PAGE
-    usernames = generate_usernames(username_page=username_page)
+    usernames = await generate_usernames(username_page=username_page)
     await upsert_usernames(usernames)
