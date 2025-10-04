@@ -47,7 +47,7 @@ async def insert_usernames(conn: asyncpg.Connection, usernames: list[UserIn]) ->
         return
 
     query = f"""
-        INSERT INTO users ({" ,".join(list(usernames[0].model_dump().keys()))}) VALUES ($1)
+        INSERT INTO users ({", ".join(list(usernames[0].model_dump().keys()))}) VALUES ($1)
     """
 
     params = [list(data.model_dump().values()) for data in usernames]
@@ -60,7 +60,7 @@ async def insert_usernames(conn: asyncpg.Connection, usernames: list[UserIn]) ->
 async def upsert_movie_ratings(movie_ratings: list[MovieRatingIn]) -> None:
     logging.info(f"Upserting {len(movie_ratings)} movie ratings to the database...")
     await upsert_to_db(
-        data_to_update=movie_ratings,
+        data_to_upsert=movie_ratings,
         table_name="movie_ratings"
     )
 
@@ -85,7 +85,7 @@ async def upsert_to_db(
         return
 
     query = f"""
-        INSERT INTO {table_name} ({" ,".join(list(data_to_upsert[0].model_dump().keys()))}) VALUES ($1)
+        INSERT INTO {table_name} ({", ".join(list(data_to_upsert[0].model_dump().keys()))}) VALUES ($1, $2, $3)
         ON CONFLICT ({", ".join(conflict_columns)}) DO UPDATE;
     """
 

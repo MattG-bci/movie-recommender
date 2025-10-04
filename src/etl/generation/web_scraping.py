@@ -16,6 +16,9 @@ from etl.sql_queries.queries import fetch_usernames_from_db
 from schemas.movies import MovieRatingIn
 from schemas.users import UserIn, User
 from settings import WebScraperSettings
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class UserScraper(BaseModel):
@@ -33,6 +36,7 @@ class UserScraper(BaseModel):
             if not new_usernames:
                 page += 1
                 continue
+            logger.info(f"Fetched {len(new_usernames)} new usernames from page {page}.")
             usernames.extend(new_usernames)
             break
         usernames = [UserIn(username=username) for username in usernames]
@@ -88,11 +92,15 @@ class RatingScraper(BaseModel):
 
         movie_ratings = []
         for user, user_ratings in zip(self.usernames, results):
+            logger.info(f"Fetched {len(user_ratings)} ratings for user: {user.username}")
             for title, movie_rating in user_ratings:
                 movie_ratings.append(MovieRatingIn(user=user.username, movie=title, rating=movie_rating))
+
+        logger.info(f"Scraping completed. Total movie ratings fetched: {len(movie_ratings)} for {len(self.usernames)} users.")
         return movie_ratings
 
     async def scrape_data_per_username(self, username: str) -> list[tuple[str, float]]:
+        logger.info(f"Scraping ratings for user: {username}")
         target_page = os.path.join(WebScraperSettings().RATINGS_PAGE, username, "films")
         response = await self.request_data(target_page)
         soup = BeautifulSoup(response.content, features="html.parser")
@@ -113,13 +121,13 @@ class RatingScraper(BaseModel):
     async def get_data(self, target_url: str) -> list[tuple[str, float]]:
         response = await self.request_data(target_url)
         soup = BeautifulSoup(response.content, features="html.parser")
-        return await self.scrape_movie_ratings(soup)
+        return self.scrape_movie_ratings(soup)
 
-    async def scrape_movie_ratings(
+    def scrape_movie_ratings(
         self, soup: BeautifulSoup
     ) -> list[tuple[str, float]]:
         movie_ratings = []
-        poster_containers = soup.find_all("li", class_="poster-container")
+        poster_containers = soup.find_all("li", class_="griditem")
         for poster in poster_containers:
             movie_title = poster.find("img")["alt"]
             rating = poster.find("span", class_="rating")
