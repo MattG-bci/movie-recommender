@@ -1,5 +1,4 @@
 import logging
-from datetime import datetime
 
 import asyncpg
 from pydantic import BaseModel
@@ -40,14 +39,30 @@ def inject_db_connection(func) -> Callable:
     return inner_wrapper
 
 
-async def upsert_usernames(usernames: list[UserIn]) -> None:
-    logging.info(f"Upserting {len(usernames)} usernames to the database...")
-    await upsert_to_db(usernames, "users")
+@inject_db_connection
+async def insert_usernames(conn: asyncpg.Connection, usernames: list[UserIn]) -> None:
+    logging.info(f"Inserting {len(usernames)} usernames to the database...")
+    if not usernames:
+        logging.info("No new usernames to upsert.")
+        return
+
+    query = f"""
+        INSERT INTO users ({" ,".join(list(usernames[0].model_dump().keys()))}) VALUES ($1)
+    """
+
+    params = [list(data.model_dump().values()) for data in usernames]
+    await conn.executemany(
+        query,
+        params,
+    )
 
 
 async def upsert_movie_ratings(movie_ratings: list[MovieRatingIn]) -> None:
     logging.info(f"Upserting {len(movie_ratings)} movie ratings to the database...")
-    await upsert_to_db(movie_ratings, "movie_ratings")
+    await upsert_to_db(
+        data_to_update=movie_ratings,
+        table_name="movie_ratings"
+    )
 
 
 @inject_db_connection
@@ -60,7 +75,10 @@ async def fetch_usernames_from_db(conn: asyncpg.Connection) -> list[User]:
 
 @inject_db_connection
 async def upsert_to_db(
-    conn: asyncpg.Connection, data_to_upsert: list[BaseModel], table_name: str
+    conn: asyncpg.Connection,
+    data_to_upsert: list[BaseModel],
+    table_name: str,
+    conflict_columns: list[str] = ("id",)
 ) -> None:
     if not data_to_upsert:
         logging.info("No data to upsert.")
@@ -68,7 +86,7 @@ async def upsert_to_db(
 
     query = f"""
         INSERT INTO {table_name} ({" ,".join(list(data_to_upsert[0].model_dump().keys()))}) VALUES ($1)
-        ON CONFLICT (username) DO NOTHING;
+        ON CONFLICT ({", ".join(conflict_columns)}) DO UPDATE;
     """
 
     params = [list(data.model_dump().values()) for data in data_to_upsert]

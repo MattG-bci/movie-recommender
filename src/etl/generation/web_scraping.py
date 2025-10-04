@@ -26,10 +26,10 @@ class UserScraper(BaseModel):
         existing_usernames = await fetch_usernames_from_db()
         existing_usernames = [user.username for user in existing_usernames]
         page = 1
-        while page <= 100:
+        while page <= 10000:
             username_url = os.path.join(self.username_page_url, "page", str(page))
             fetched_usernames = self.get_usernames_for_page(username_url)
-            new_usernames = list(set(existing_usernames) - set(fetched_usernames))
+            new_usernames = list(set(fetched_usernames) - set(existing_usernames))
             if not new_usernames:
                 page += 1
                 continue
