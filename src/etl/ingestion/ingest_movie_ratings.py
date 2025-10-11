@@ -1,6 +1,6 @@
 from etl.generation.generate import generate_movie_ratings
 from etl.sql_queries.queries import fetch_usernames_from_db, upsert_movie_ratings
-
+import asyncio
 
 async def ingest_movie_ratings() -> None:
     usernames = await fetch_usernames_from_db()
@@ -9,6 +9,4 @@ async def ingest_movie_ratings() -> None:
 
 
 if __name__ == "__main__":
-    import asyncio
-
     asyncio.run(ingest_movie_ratings())

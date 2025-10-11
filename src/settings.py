@@ -17,6 +17,7 @@ class DBSettings(BaseSettings):
 class WebScraperSettings(BaseSettings):
     USERNAME_PAGE: str
     RATINGS_PAGE: str
+    MOVIES_PAGE: str
 
     model_config = SettingsConfigDict(
         env_prefix="SCRAPER_",

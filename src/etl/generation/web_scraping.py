@@ -141,3 +141,17 @@ class RatingScraper(BaseModel):
     def convert_rating(rating: str) -> float:
         num_rating = float(len(rating)) if rating[-1] != "½" else len(rating) - 0.5
         return num_rating * 2
+
+
+class MovieScraper(BaseModel):
+    movie_page_url: str
+
+    async def get_data(self):
+        ...
+
+    @retry(wait=wait_exponential(multiplier=1, min=4, max=10))
+    async def request_data(self, target_page: str) -> httpx.Response:
+        ...
+
+    async def scrape_movies(self):
+        ...
