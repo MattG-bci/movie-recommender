@@ -9,20 +9,9 @@ app = FastAPI()
 
 
 @app.get("/")
-async def root():
-    return JSONResponse(
-        content={
-            "date": datetime.datetime.now().isoformat(),
-            "name": "Jeff",
-            "occupation": "Student",
-        }
-    )
-
-
-@app.get("/data")
-async def display_data():
-    return JSONResponse(content=None)
+async def get_status() -> dict[str, str]:
+    return {"status": "OK"}
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="localhost", port=6969)
+    uvicorn.run(app, host="localhost", port=8080)
