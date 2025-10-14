@@ -3,6 +3,13 @@ import datetime
 from pydantic import BaseModel
 
 
+
+class MovieIn(BaseModel):
+    title: str
+    release_year: int
+    genres: list[str]
+
+
 class Movies(BaseModel):
     id: int
     title: str

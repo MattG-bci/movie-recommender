@@ -1,6 +1,6 @@
 from bs4 import BeautifulSoup
 
-from httpx import Response
+from httpx import Response, AsyncClient
 from pydantic import BaseModel
 from requests import get
 from requests.exceptions import RequestException
@@ -13,7 +13,7 @@ import os
 import itertools
 
 from etl.sql_queries.queries import fetch_usernames_from_db
-from schemas.movies import MovieRatingIn
+from schemas.movies import MovieRatingIn, MovieIn
 from schemas.users import UserIn, User
 from settings import WebScraperSettings
 import logging
@@ -142,16 +142,57 @@ class RatingScraper(BaseModel):
         num_rating = float(len(rating)) if rating[-1] != "½" else len(rating) - 0.5
         return num_rating * 2
 
+from playwright.async_api import async_playwright
 
 class MovieScraper(BaseModel):
     movie_page_url: str
 
-    async def get_data(self):
-        ...
+    async def get_data(self) -> list[MovieIn]:
+        #resp = await self.request_data(self.movie_page_url)
+        resp = await self.fetch_dynamic_html(self.movie_page_url)
+        soup = BeautifulSoup(resp, features="html.parser")
+        movies = self.scrape_movies(soup)
+        return movies
 
     @retry(wait=wait_exponential(multiplier=1, min=4, max=10))
     async def request_data(self, target_page: str) -> httpx.Response:
-        ...
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
+            "Accept": "application/json",
+            "Referer": target_page,
+            "X-Requested-With": "XMLHttpRequest"
+        }
+        async with AsyncClient(follow_redirects=True) as client:
+            try:
+                response = await client.get(target_page, headers=headers)
+                response.raise_for_status()
+            except httpx.RequestError as exc:
+                raise Exception(f"Error in the request to {target_page}.") from exc
+        return response
 
-    async def scrape_movies(self):
-        ...
+    @staticmethod
+    def scrape_movies(soup: BeautifulSoup) -> list[MovieIn]:
+        movies = []
+        movie_containers = soup.find_all("div", class_="poster film-poster")
+        for movie in movie_containers:
+            title, release_year = movie.find("a", class_="frame").text.split(" ")
+            release_year = int(release_year.strip("()"))
+
+            # TODO: go to href link per movie and fetch genres from there
+            genres = [
+                genre.text for genre in movie.find_all("span", class_="genre")
+            ]
+            movies.append(
+                MovieIn(title=title, release_year=release_year, genres=genres)
+            )
+        return movies
+
+    @staticmethod
+    async def fetch_dynamic_html(url: str) -> str:
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(headless=True)
+            page = await browser.new_page()
+            await page.goto(url, wait_until="networkidle")
+            html = await page.content()
+            await browser.close()
+        return html

@@ -5,7 +5,7 @@ import asyncio
 
 async def ingest_movies() -> None:
     movie_scraper = MovieScraper(movie_page_url=WebScraperSettings().MOVIES_PAGE)
-    movies = await movie_scraper.scrape_movies()
+    movies = await movie_scraper.get_data()
     await upsert_to_db(movies, "movies")
 
 
