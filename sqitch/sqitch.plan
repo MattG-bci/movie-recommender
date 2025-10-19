@@ -4,3 +4,4 @@
 
 29012025_create_initial_schema 2025-01-29T22:54:30Z Matt <root@Mateuszs-MacBook-Pro.local> # Adding initial sql queries to create a sketch of tables
 11102025_add_genre_column_to_movies 2025-10-11T22:21:38Z Matt <root@Mateuszs-MBP.mynet> # Add genre column
+19102025_create_extra_columns_to_movies_table 2025-10-19T21:26:02Z Matt <root@Mateuszs-MBP.mynet> # Add columns to movies table

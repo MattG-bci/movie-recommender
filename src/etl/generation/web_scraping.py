@@ -148,10 +148,9 @@ class MovieScraper(BaseModel):
     movie_page_url: str
 
     async def get_data(self) -> list[MovieIn]:
-        #resp = await self.request_data(self.movie_page_url)
         resp = await self.fetch_dynamic_html(self.movie_page_url)
         soup = BeautifulSoup(resp, features="html.parser")
-        movies = self.scrape_movies(soup)
+        movies = await self.scrape_movies(soup)
         return movies
 
     @retry(wait=wait_exponential(multiplier=1, min=4, max=10))
@@ -170,21 +169,29 @@ class MovieScraper(BaseModel):
                 raise Exception(f"Error in the request to {target_page}.") from exc
         return response
 
-    @staticmethod
-    def scrape_movies(soup: BeautifulSoup) -> list[MovieIn]:
+    async def scrape_movies(self, soup: BeautifulSoup) -> list[MovieIn]:
         movies = []
         movie_containers = soup.find_all("div", class_="poster film-poster")
         for movie in movie_containers:
-            title, release_year = movie.find("a", class_="frame").text.split(" ")
+            data = movie.find("a", class_="frame")
+            title, release_year = data.text.split(" ")
             release_year = int(release_year.strip("()"))
 
-            # TODO: go to href link per movie and fetch genres from there
-            genres = [
-                genre.text for genre in movie.find_all("span", class_="genre")
-            ]
+            movie_link = "https://letterboxd.com" + data["href"]
+            resp = await self.fetch_dynamic_html(movie_link)
+            local_soup = BeautifulSoup(resp, features="html.parser")
+            actors = [actor.text for actor in local_soup.find("div", class_="cast-list").find_all("a")[:5]] # Only get first 5 actors
+            director = local_soup.find("a", class_="contributor").text
+            country = local_soup.find("div", id="tab-details").find_all("div", class_="text-sluglist")
+            country = [row.find("a") for row in country]
+            country = [row.text for row in country if "country" in row["href"]][0].strip(" ")
+            genres = local_soup.find("div", id="tab-genres").find_next("div", class_="text-sluglist capitalize").find_all("a")
+            genres = [genre.text for genre in genres]
+
             movies.append(
-                MovieIn(title=title, release_year=release_year, genres=genres)
+                MovieIn(title=title, release_year=release_year, director=director, actors=actors, genres=genres, country=country)
             )
+            break
         return movies
 
     @staticmethod

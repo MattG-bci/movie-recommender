@@ -75,22 +75,31 @@ async def fetch_usernames_from_db(conn: asyncpg.Connection) -> list[User]:
 
 @inject_db_connection
 async def upsert_to_db(
-    conn: asyncpg.Connection,
-    data_to_upsert: list[BaseModel],
-    table_name: str,
-    conflict_columns: list[str] = ("id",)
+        conn: asyncpg.Connection,
+        data_to_upsert: list[BaseModel],
+        table_name: str,
+        conflict_columns: list[str] = ("id",)
 ) -> None:
     if not data_to_upsert:
         logging.info("No data to upsert.")
         return
 
+    # Get column names
+    column_names = list(data_to_upsert[0].model_dump().keys())
+
+    # Create the correct number of placeholders
+    placeholders = ', '.join(f'${i + 1}' for i in range(len(column_names)))
+
+    # Create SET clause for updates
+    set_clause = ', '.join(f"{col} = excluded.{col}" for col in column_names
+                           if col not in conflict_columns)
+
     query = f"""
-        INSERT INTO {table_name} ({", ".join(list(data_to_upsert[0].model_dump().keys()))}) VALUES ($1, $2, $3)
-        ON CONFLICT ({", ".join(conflict_columns)}) DO UPDATE;
+        INSERT INTO {table_name} ({", ".join(column_names)})
+        VALUES ({placeholders})
+        ON CONFLICT ({", ".join(conflict_columns)})
+        DO UPDATE SET {set_clause}
     """
 
     params = [list(data.model_dump().values()) for data in data_to_upsert]
-    await conn.executemany(
-        query,
-        params,
-    )
+    await conn.executemany(query, params)
