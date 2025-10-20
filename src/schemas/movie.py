@@ -13,7 +13,7 @@ class MovieIn(BaseModel):
     genres: list[str]
 
 
-class Movies(BaseModel):
+class Movie(BaseModel):
     id: int
     title: str
     release_year: int

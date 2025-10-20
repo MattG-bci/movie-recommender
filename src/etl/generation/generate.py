@@ -1,4 +1,4 @@
-from schemas.movies import MovieRatingIn
+from schemas.movie import MovieRatingIn
 from schemas.users import UserIn, User
 from etl.generation.web_scraping import UserScraper, RatingScraper
 

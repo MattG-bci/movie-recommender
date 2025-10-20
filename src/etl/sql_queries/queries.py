@@ -5,7 +5,7 @@ from pydantic import BaseModel
 
 from typing import Any, Callable, Coroutine
 
-from schemas.movies import MovieRatingIn
+from schemas.movie import MovieRatingIn, Movie
 from schemas.users import UserIn, User
 from settings import DBSettings
 
@@ -69,8 +69,14 @@ async def upsert_movie_ratings(movie_ratings: list[MovieRatingIn]) -> None:
 async def fetch_usernames_from_db(conn: asyncpg.Connection) -> list[User]:
     query = "SELECT * FROM users"
     rows = await conn.fetch(query)
-
     return [User(**dict(row)) for row in rows]
+
+
+@inject_db_connection
+async def fetch_movies_from_db(conn: asyncpg.Connection) -> list[Movie]:
+    query = "SELECT * FROM movie_ratings"
+    rows = await conn.fetch(query)
+    return [Movie(**dict(row)) for row in rows]
 
 
 @inject_db_connection
