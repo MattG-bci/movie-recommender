@@ -4,6 +4,7 @@ from pydantic import BaseModel
 
 
 class UserIn(BaseModel):
+    id: int
     username: str
 
     # Uses memory address of an instance to hash it

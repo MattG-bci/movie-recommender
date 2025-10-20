@@ -26,11 +26,12 @@ class Movie(BaseModel):
 
 
 class MovieRatingIn(BaseModel):
-    user: str
-    movie: str
+    user_id: int
+    movie_id: int
     rating: float
 
 
 class MovieRating(MovieRatingIn):
+    id: int
     created_at: datetime.datetime
     updated_at: datetime.datetime

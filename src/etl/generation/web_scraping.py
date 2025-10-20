@@ -1,6 +1,6 @@
 from bs4 import BeautifulSoup
 
-from httpx import Response, AsyncClient
+from httpx import Response
 from pydantic import BaseModel
 from requests import get
 from requests.exceptions import RequestException
@@ -74,6 +74,8 @@ class UserScraper(BaseModel):
 
 class RatingScraper(BaseModel):
     usernames: list[User]
+    map_username_to_id: dict[str, int]
+    map_movie_to_id: dict[str, int]
 
     @retry(wait=wait_exponential(multiplier=1, min=4, max=10))
     async def request_data(self, target_page: str) -> httpx.Response:
@@ -96,7 +98,12 @@ class RatingScraper(BaseModel):
         for user, user_ratings in zip(self.usernames, results):
             logger.info(f"Fetched {len(user_ratings)} ratings for user: {user.username}")
             for title, movie_rating in user_ratings:
-                movie_ratings.append(MovieRatingIn(user=user.username, movie=title, rating=movie_rating))
+                user_id = self.map_username_to_id.get(user.username)
+                movie_id = self.map_movie_to_id.get(title)
+                if movie_id is None:
+                    logger.info(f"Movie '{title}' not found in the database. Skipping rating for user '{user.username}'.")
+                    continue
+                movie_ratings.append(MovieRatingIn(user_id=user_id, movie_id=movie_id, rating=movie_rating))
 
         logger.info(f"Scraping completed. Total movie ratings fetched: {len(movie_ratings)} for {len(self.usernames)} users.")
         return movie_ratings
@@ -155,28 +162,30 @@ class MovieScraper(BaseModel):
         n_page = 1
         while True:
             target_page = os.path.join(self.movie_page_url, str(n_page))
-            resp = await self.fetch_dynamic_html(target_page)
+            resp = await self.request_data(target_page)
             soup = BeautifulSoup(resp, features="html.parser")
-            new_movies = await self.scrape_movies(soup)
-            new_movies = [movie for movie in new_movies if movie.title not in existing_movie_titles]
+            new_movies = await self.scrape_movies(soup, existing_movie_titles)
             if not new_movies:
                 logger.info(f"No new movies found on page {n_page}. Scraping next page...")
                 n_page += 1
                 continue
             return new_movies
 
-    async def scrape_movies(self, soup: BeautifulSoup) -> list[MovieIn]:
+    async def scrape_movies(self, soup: BeautifulSoup, existing_movie_titles: set[str]) -> list[MovieIn]:
         movies = []
         movie_containers = soup.find_all("div", class_="poster film-poster")
         for movie in movie_containers:
             movie_information = movie.find("a", class_="frame")
             data = movie_information.text.split(" ")
             title = " ".join(data[:-1])
+            if title in existing_movie_titles:
+                logger.info(f"Movie '{title}' already exists in the database. Skipping...")
+                continue
             release_year = data[-1]
             release_year = int(release_year.strip("()"))
 
             movie_link = "https://letterboxd.com" + movie_information["href"]
-            resp = await self.fetch_dynamic_html(movie_link)
+            resp = await self.request_data(movie_link)
             local_soup = BeautifulSoup(resp, features="html.parser")
             actors = [actor.text for actor in local_soup.find("div", class_="cast-list").find_all("a")[:5]] # Only get first 5 actors
             director = local_soup.find("a", class_="contributor").text
@@ -193,7 +202,7 @@ class MovieScraper(BaseModel):
 
     @staticmethod
     @retry(wait=wait_exponential(multiplier=1, min=4, max=10))
-    async def fetch_dynamic_html(url: str) -> str:
+    async def request_data(url: str) -> str:
         async with async_playwright() as p:
             browser = await p.chromium.launch(headless=True)
             page = await browser.new_page()

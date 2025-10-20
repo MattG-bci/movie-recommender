@@ -74,7 +74,7 @@ async def fetch_usernames_from_db(conn: asyncpg.Connection) -> list[User]:
 
 @inject_db_connection
 async def fetch_movies_from_db(conn: asyncpg.Connection) -> list[Movie]:
-    query = "SELECT * FROM movie_ratings"
+    query = "SELECT * FROM movies"
     rows = await conn.fetch(query)
     return [Movie(**dict(row)) for row in rows]
 
