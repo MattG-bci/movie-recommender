@@ -29,7 +29,7 @@ async def ingest_users() -> None:
 
 @app.command()
 @async_typer_command
-async def ingest_movies() -> None:
+async def ingest_movies_command() -> None:
     await ingest_movies()
 
 

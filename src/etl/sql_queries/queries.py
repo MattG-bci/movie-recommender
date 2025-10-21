@@ -61,7 +61,8 @@ async def upsert_movie_ratings(movie_ratings: list[MovieRatingIn]) -> None:
     logging.info(f"Upserting {len(movie_ratings)} movie ratings to the database...")
     await upsert_to_db(
         data_to_upsert=movie_ratings,
-        table_name="movie_ratings"
+        table_name="movie_ratings",
+        conflict_columns=["user_id", "movie_id"],
     )
 
 

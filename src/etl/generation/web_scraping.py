@@ -48,7 +48,7 @@ class UserScraper(BaseModel):
         response = self.request_data(username_url)
         soup = BeautifulSoup(response.content, features="html.parser")
         usernames = self.get_data(soup)
-        return self.remove_duplicates(usernames)
+        return usernames
 
     @staticmethod
     def request_data(usernames_page: str) -> Response:
@@ -66,10 +66,6 @@ class UserScraper(BaseModel):
             user = user.find("a", class_="name")["href"].split("/")[1]
             usernames.append(user)
         return usernames
-
-    @staticmethod
-    def remove_duplicates(usernames: list[str]) -> list[str]:
-        return list(set(usernames))
 
 
 class RatingScraper(BaseModel):
