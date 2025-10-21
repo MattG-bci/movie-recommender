@@ -182,16 +182,20 @@ class MovieScraper(BaseModel):
             release_year = data[-1]
             release_year = int(release_year.strip("()"))
 
-            movie_link = "https://letterboxd.com" + movie_information["href"]
+            movie_link = os.path.join("https://letterboxd.com", movie_information["href"])
             resp = await self.request_data(movie_link)
-            local_soup = BeautifulSoup(resp, features="html.parser")
-            actors = [actor.text for actor in local_soup.find("div", class_="cast-list").find_all("a")[:5]] # Only get first 5 actors
-            director = local_soup.find("a", class_="contributor").text
-            country = local_soup.find("div", id="tab-details").find_all("div", class_="text-sluglist")
-            country = [row.find("a") for row in country]
-            country = [row.text for row in country if "country" in row["href"]][0].strip(" ")
-            genres = local_soup.find("div", id="tab-genres").find_next("div", class_="text-sluglist capitalize").find_all("a")
-            genres = [genre.text for genre in genres]
+            movie_soup = BeautifulSoup(resp, features="html.parser")
+            try:
+                actors = [actor.text for actor in movie_soup.find("div", class_="cast-list").find_all("a")[:5]] # Only get first 5 actors
+                director = movie_soup.find("a", class_="contributor").text
+                country = movie_soup.find("div", id="tab-details").find_all("div", class_="text-sluglist")
+                country = [row.find("a") for row in country]
+                country = [row.text for row in country if "country" in row["href"]][0].strip(" ")
+                genres = movie_soup.find("div", id="tab-genres").find_next("div", class_="text-sluglist capitalize").find_all("a")
+                genres = [genre.text for genre in genres]
+            except Exception as e:
+                logger.error(f"Error while scraping movie details for '{title}': {e}")
+                continue
 
             movies.append(
                 MovieIn(title=title, release_year=release_year, director=director, actors=actors, genres=genres, country=country)
