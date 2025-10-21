@@ -22,8 +22,21 @@ def async_typer_command(func):
 
 
 @app.command()
-def ingest_users() -> None:
-    asyncio.run(ingest_usernames())
+@async_typer_command
+async def ingest_users() -> None:
+    await ingest_usernames()
+
+
+@app.command()
+@async_typer_command
+async def ingest_movies() -> None:
+    await ingest_movies()
+
+
+@app.command()
+@async_typer_command
+async def ingest_ratings() -> None:
+    await ingest_movie_ratings()
 
 
 @app.command()
