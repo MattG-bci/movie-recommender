@@ -25,24 +25,24 @@ logger = logging.getLogger(__name__)
 class UserScraper(BaseModel):
     username_page_url: str
 
-    async def scrape_page(self) -> list[UserIn]:
-        usernames = []
+    async def scrape_page_incremental(self) -> list[UserIn]:
         existing_usernames = await fetch_usernames_from_db()
         existing_usernames = [user.username for user in existing_usernames]
         page = 1
         while True:
             username_url = os.path.join(self.username_page_url, "page", str(page))
-            fetched_usernames = self.get_usernames_for_page(username_url)
+            try:
+                fetched_usernames = self.get_usernames_for_page(username_url)
+            except Exception as e:
+                logger.error(f"Scraping failed on page {page}. Error: {e}")
+                break
             new_usernames = list(set(fetched_usernames) - set(existing_usernames))
-            if not new_usernames:
-                logger.info(f"No new usernames found on page {page}. Scraping the next page...")
-                page += 1
-                continue
-            logger.info(f"Fetched {len(new_usernames)} new usernames from page {page}.")
-            usernames.extend(new_usernames)
-            break
-        usernames = [UserIn(username=username) for username in usernames]
-        return usernames
+            if new_usernames:
+                logger.info(f"Fetched {len(new_usernames)} new usernames from page {page}.")
+                usernames = [UserIn(username=username) for username in new_usernames]
+                return usernames
+            logger.info(f"No new usernames found on page {page}. Scraping the next page...")
+            page += 1
 
     def get_usernames_for_page(self, username_url: str) -> list[str]:
         response = self.request_data(username_url)
@@ -164,12 +164,15 @@ class MovieScraper(BaseModel):
             target_page = os.path.join(self.movie_page_url, str(n_page))
             resp = await self.request_data(target_page)
             soup = BeautifulSoup(resp, features="html.parser")
-            new_movies = await self.scrape_movies(soup, existing_movie_titles)
-            if not new_movies:
-                logger.info(f"No new movies found on page {n_page}. Scraping next page...")
-                n_page += 1
-                continue
-            return new_movies
+            try:
+                new_movies = await self.scrape_movies(soup, existing_movie_titles)
+            except Exception as e:
+                logger.error(f"Error while scraping page {n_page}: {e}")
+                break
+            if new_movies:
+                return new_movies
+            logger.info(f"No new movies found on page {n_page}. Scraping next page...")
+            n_page += 1
 
     async def scrape_movies(self, soup: BeautifulSoup, existing_movie_titles: set[str]) -> list[MovieIn]:
         movies = []
