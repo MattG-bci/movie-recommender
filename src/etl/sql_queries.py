@@ -89,10 +89,10 @@ async def fetch_movie_ratings_from_db(conn: asyncpg.Connection) -> list[MovieRat
 
 @inject_db_connection
 async def upsert_to_db(
-        conn: asyncpg.Connection,
-        data_to_upsert: list[BaseModel],
-        table_name: str,
-        conflict_columns: list[str] = ("id",)
+    conn: asyncpg.Connection,
+    data_to_upsert: list[BaseModel],
+    table_name: str,
+    conflict_columns: list[str] = ("id",),
 ) -> None:
     if not data_to_upsert:
         logging.info("No data to upsert.")
@@ -102,11 +102,12 @@ async def upsert_to_db(
     column_names = list(data_to_upsert[0].model_dump().keys())
 
     # Create the correct number of placeholders
-    placeholders = ', '.join(f'${i + 1}' for i in range(len(column_names)))
+    placeholders = ", ".join(f"${i + 1}" for i in range(len(column_names)))
 
     # Create SET clause for updates
-    set_clause = ', '.join(f"{col} = excluded.{col}" for col in column_names
-                           if col not in conflict_columns)
+    set_clause = ", ".join(
+        f"{col} = excluded.{col}" for col in column_names if col not in conflict_columns
+    )
 
     query = f"""
         INSERT INTO {table_name} ({", ".join(column_names)})

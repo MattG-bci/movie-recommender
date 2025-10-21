@@ -25,6 +25,10 @@ async def generate_movie_ratings(
     movies_from_db = await fetch_movies_from_db()
     map_movie_titles_to_ids = {movie.title: movie.id for movie in movies_from_db}
 
-    rating_scraper = RatingScraper(usernames=usernames, map_username_to_id=map_usernames_to_ids, map_movie_to_id=map_movie_titles_to_ids)
+    rating_scraper = RatingScraper(
+        usernames=usernames,
+        map_username_to_id=map_usernames_to_ids,
+        map_movie_to_id=map_movie_titles_to_ids,
+    )
     movie_data = await rating_scraper.scrape_data()
     return movie_data

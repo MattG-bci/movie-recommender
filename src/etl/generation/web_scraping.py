@@ -38,10 +38,14 @@ class UserScraper(BaseModel):
                 break
             new_usernames = list(set(fetched_usernames) - set(existing_usernames))
             if new_usernames:
-                logger.info(f"Fetched {len(new_usernames)} new usernames from page {page}.")
+                logger.info(
+                    f"Fetched {len(new_usernames)} new usernames from page {page}."
+                )
                 usernames = [UserIn(username=username) for username in new_usernames]
                 return usernames
-            logger.info(f"No new usernames found on page {page}. Scraping the next page...")
+            logger.info(
+                f"No new usernames found on page {page}. Scraping the next page..."
+            )
             page += 1
 
     def get_usernames_for_page(self, username_url: str) -> list[str]:
@@ -92,16 +96,26 @@ class RatingScraper(BaseModel):
 
         movie_ratings = []
         for user, user_ratings in zip(self.usernames, results):
-            logger.info(f"Fetched {len(user_ratings)} ratings for user: {user.username}")
+            logger.info(
+                f"Fetched {len(user_ratings)} ratings for user: {user.username}"
+            )
             for title, movie_rating in user_ratings:
                 user_id = self.map_username_to_id.get(user.username)
                 movie_id = self.map_movie_to_id.get(title)
                 if movie_id is None:
-                    logger.info(f"Movie '{title}' not found in the database. Skipping rating for user '{user.username}'.")
+                    logger.info(
+                        f"Movie '{title}' not found in the database. Skipping rating for user '{user.username}'."
+                    )
                     continue
-                movie_ratings.append(MovieRatingIn(user_id=user_id, movie_id=movie_id, rating=movie_rating))
+                movie_ratings.append(
+                    MovieRatingIn(
+                        user_id=user_id, movie_id=movie_id, rating=movie_rating
+                    )
+                )
 
-        logger.info(f"Scraping completed. Total movie ratings fetched: {len(movie_ratings)} for {len(self.usernames)} users.")
+        logger.info(
+            f"Scraping completed. Total movie ratings fetched: {len(movie_ratings)} for {len(self.usernames)} users."
+        )
         return movie_ratings
 
     async def scrape_data_per_username(self, username: str) -> list[tuple[str, float]]:
@@ -128,9 +142,7 @@ class RatingScraper(BaseModel):
         soup = BeautifulSoup(response.content, features="html.parser")
         return self.scrape_movie_ratings(soup)
 
-    def scrape_movie_ratings(
-        self, soup: BeautifulSoup
-    ) -> list[tuple[str, float]]:
+    def scrape_movie_ratings(self, soup: BeautifulSoup) -> list[tuple[str, float]]:
         movie_ratings = []
         poster_containers = soup.find_all("li", class_="griditem")
         for poster in poster_containers:
@@ -170,7 +182,9 @@ class MovieScraper(BaseModel):
             logger.info(f"No new movies found on page {n_page}. Scraping next page...")
             n_page += 1
 
-    async def scrape_movies(self, soup: BeautifulSoup, existing_movie_titles: set[str]) -> list[MovieIn]:
+    async def scrape_movies(
+        self, soup: BeautifulSoup, existing_movie_titles: set[str]
+    ) -> list[MovieIn]:
         movies = []
         movie_containers = soup.find_all("div", class_="poster film-poster")
         for movie in movie_containers:
@@ -182,23 +196,45 @@ class MovieScraper(BaseModel):
             release_year = data[-1]
             release_year = int(release_year.strip("()"))
 
-            movie_link = os.path.join("https://letterboxd.com", movie_information["href"])
+            movie_link = os.path.join(
+                "https://letterboxd.com", movie_information["href"]
+            )
             resp = await self.request_data(movie_link)
             movie_soup = BeautifulSoup(resp, features="html.parser")
             try:
-                actors = [actor.text for actor in movie_soup.find("div", class_="cast-list").find_all("a")[:5]] # Only get first 5 actors
+                actors = [
+                    actor.text
+                    for actor in movie_soup.find("div", class_="cast-list").find_all(
+                        "a"
+                    )[:5]
+                ]  # Only get first 5 actors
                 director = movie_soup.find("a", class_="contributor").text
-                country = movie_soup.find("div", id="tab-details").find_all("div", class_="text-sluglist")
+                country = movie_soup.find("div", id="tab-details").find_all(
+                    "div", class_="text-sluglist"
+                )
                 country = [row.find("a") for row in country]
-                country = [row.text for row in country if "country" in row["href"]][0].strip(" ")
-                genres = movie_soup.find("div", id="tab-genres").find_next("div", class_="text-sluglist capitalize").find_all("a")
+                country = [row.text for row in country if "country" in row["href"]][
+                    0
+                ].strip(" ")
+                genres = (
+                    movie_soup.find("div", id="tab-genres")
+                    .find_next("div", class_="text-sluglist capitalize")
+                    .find_all("a")
+                )
                 genres = [genre.text for genre in genres]
             except Exception as e:
                 logger.error(f"Error while scraping movie details for '{title}': {e}")
                 continue
 
             movies.append(
-                MovieIn(title=title, release_year=release_year, director=director, actors=actors, genres=genres, country=country)
+                MovieIn(
+                    title=title,
+                    release_year=release_year,
+                    director=director,
+                    actors=actors,
+                    genres=genres,
+                    country=country,
+                )
             )
         return movies
 
