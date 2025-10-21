@@ -1,12 +1,19 @@
-from etl.sql_queries.queries import fetch_usernames_from_db, fetch_movies_from_db
-from schemas.movie import MovieRatingIn
+from etl.sql_queries import fetch_usernames_from_db, fetch_movies_from_db
+from schemas.movie import MovieRatingIn, MovieIn
 from schemas.users import UserIn, User
-from etl.generation.web_scraping import UserScraper, RatingScraper
+from etl.generation.web_scraping import UserScraper, RatingScraper, MovieScraper
+
 
 async def generate_usernames(username_page: str) -> list[UserIn]:
     usr_scraper = UserScraper(username_page_url=username_page)
     usernames = await usr_scraper.scrape_page_incremental()
     return usernames
+
+
+async def generate_movies(movies_page: str) -> list[MovieIn]:
+    movie_scraper = MovieScraper(movie_page_url=movies_page)
+    movies = await movie_scraper.get_data_incremental()
+    return movies
 
 
 async def generate_movie_ratings(

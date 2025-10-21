@@ -1,8 +1,6 @@
 import typer
 
-from etl.ingestion.ingest_movies import ingest_movies
-from etl.ingestion.ingest_usernames import ingest_usernames
-from etl.ingestion.ingest_movie_ratings import ingest_movie_ratings
+from etl.ingestion import ingest_movies, ingest_usernames, ingest_movie_ratings
 import asyncio
 from functools import wraps
 import logging

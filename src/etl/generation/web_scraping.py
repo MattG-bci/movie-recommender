@@ -13,7 +13,7 @@ from playwright.async_api import async_playwright
 import os
 import itertools
 
-from etl.sql_queries.queries import fetch_usernames_from_db, fetch_movies_from_db
+from etl.sql_queries import fetch_usernames_from_db, fetch_movies_from_db
 from schemas.movie import MovieRatingIn, MovieIn
 from schemas.users import UserIn, User
 from settings import WebScraperSettings
@@ -178,7 +178,6 @@ class MovieScraper(BaseModel):
             data = movie_information.text.split(" ")
             title = " ".join(data[:-1])
             if title in existing_movie_titles:
-                logger.info(f"Movie '{title}' already exists in the database. Skipping...")
                 continue
             release_year = data[-1]
             release_year = int(release_year.strip("()"))
