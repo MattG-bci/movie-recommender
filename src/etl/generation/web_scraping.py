@@ -187,7 +187,10 @@ class MovieScraper(BaseModel):
     ) -> list[MovieIn]:
         movies = []
         movie_containers = soup.find_all("div", class_="poster film-poster")
-        for movie in movie_containers:
+        for idx, movie in enumerate(movie_containers):
+            logger.info(
+                f"Processing movie {idx + 1}/{len(movie_containers)}",
+            )
             movie_information = movie.find("a", class_="frame")
             data = movie_information.text.split(" ")
             title = " ".join(data[:-1])
@@ -200,6 +203,7 @@ class MovieScraper(BaseModel):
                 "https://letterboxd.com", movie_information["href"]
             )
             resp = await self.request_data(movie_link)
+            logger.info("Processing response...")
             movie_soup = BeautifulSoup(resp, features="html.parser")
             try:
                 actors = [
