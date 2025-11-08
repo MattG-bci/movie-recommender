@@ -2,6 +2,7 @@ import torch
 from torch import nn, optim
 import logging
 
+from schemas.movie import MovieRating
 
 logger = logging.getLogger(__name__)
 
@@ -16,14 +17,14 @@ class Recommender(nn.Module):
         )
         self.loss = nn.MSELoss()
 
-        self.user_bias = nn.Embedding(num_users, 1)
-        self.movie_bias = nn.Embedding(num_movies, 1)
+        self.user_bias = nn.Embedding(n_users, 1)
+        self.movie_bias = nn.Embedding(n_movies, 1)
         nn.init.normal_(self.user_embedding.weight, std=0.1)
         nn.init.normal_(self.movie_embedding.weight, std=0.1)
         nn.init.zeros_(self.user_bias.weight)
         nn.init.zeros_(self.movie_bias.weight)
 
-    def forward(self, user_ids: list[int], movie_ids: list[int]) -> torch.Tensor:
+    def forward(self, user_ids: torch.Tensor, movie_ids: torch.Tensor) -> torch.Tensor:
         user_vecs = self.user_embedding(user_ids)
         movie_vecs = self.movie_embedding(movie_ids)
 
@@ -33,23 +34,23 @@ class Recommender(nn.Module):
         return preds.squeeze()
 
 
-if __name__ == "__main__":
-    num_users = 1000
-    num_movies = 5000
-    model = Recommender(num_users, num_movies)
+def train_movie_recommender(ratings: list[MovieRating], epochs: int = 100) -> None:
+    user_ids = torch.tensor([rating.user_id for rating in ratings])
+    movie_ids = torch.tensor([rating.movie_id for rating in ratings])
+    rating_values = torch.tensor(
+        [rating.rating for rating in ratings], dtype=torch.float
+    )
+    n_users = len(user_ids)
+    n_movies = len(movie_ids)
 
-    user_ids = torch.tensor([1] * 32)
-    movie_ids = torch.tensor([1] * 32)
-    ratings = torch.rand(32) * 10
-
-    optimizer = optim.Adam(model.parameters(), lr=0.001)
+    model = Recommender(n_users, n_movies)
+    optimizer = optim.Adam(model.parameters(), lr=0.01)
     criterion = model.loss
 
-    for epoch in range(5):
+    for epoch in range(epochs):
         preds = model(user_ids, movie_ids)
-        loss = criterion(preds, ratings)
-        print(loss)
+        loss = criterion(preds, rating_values)
+        logger.info(f"Training loss: {loss.item():.4f}")
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-        logger.info(f"Training loss: {loss.item():.4f}")

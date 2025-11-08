@@ -5,6 +5,9 @@ import asyncio
 from functools import wraps
 import logging
 
+from etl.sql_queries import fetch_movie_ratings_from_db
+from model.recommender import train_movie_recommender
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -45,6 +48,13 @@ async def run_all_ingestion() -> None:
     await ingest_usernames()
     await ingest_movies()
     await ingest_movie_ratings()
+
+
+@app.command()
+@async_typer_command
+async def train_recommender() -> None:
+    ratings = await fetch_movie_ratings_from_db()
+    train_movie_recommender(ratings)
 
 
 if __name__ == "__main__":
