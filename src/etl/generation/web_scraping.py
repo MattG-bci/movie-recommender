@@ -1,3 +1,5 @@
+from urllib.parse import urljoin
+
 from bs4 import BeautifulSoup
 
 from httpx import Response
@@ -199,9 +201,7 @@ class MovieScraper(BaseModel):
             release_year = data[-1]
             release_year = int(release_year.strip("()"))
 
-            movie_link = os.path.join(
-                "https://letterboxd.com", movie_information["href"]
-            )
+            movie_link = urljoin("https://letterboxd.com", movie_information["href"])
             resp = await self.request_data(movie_link)
             logger.info("Processing response...")
             movie_soup = BeautifulSoup(resp, features="html.parser")
@@ -243,7 +243,6 @@ class MovieScraper(BaseModel):
         return movies
 
     @staticmethod
-    @retry(wait=wait_exponential(multiplier=1, min=4, max=10))
     async def request_data(url: str) -> str:
         async with async_playwright() as p:
             browser = await p.chromium.launch(headless=True)
