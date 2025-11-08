@@ -3,6 +3,7 @@ from torch import nn, optim
 import logging
 
 from schemas.movie import MovieRating
+from sklearn.model_selection import train_test_split
 
 logger = logging.getLogger(__name__)
 
@@ -43,14 +44,24 @@ def train_movie_recommender(ratings: list[MovieRating], epochs: int = 100) -> No
     n_users = len(user_ids)
     n_movies = len(movie_ids)
 
+    features = torch.stack([user_ids, movie_ids], dim=1)
+    X_train, X_val, y_train, y_val = train_test_split(
+        features, rating_values, test_size=0.3, random_state=42
+    )
+
     model = Recommender(n_users, n_movies)
     optimizer = optim.Adam(model.parameters(), lr=0.01)
     criterion = model.loss
 
     for epoch in range(epochs):
-        preds = model(user_ids, movie_ids)
-        loss = criterion(preds, rating_values)
+        train_preds = model(X_train[:, 0], X_train[:, 1])
+        loss = criterion(train_preds, y_train)
         logger.info(f"Training loss: {loss.item():.4f}")
+
+        val_preds = model(X_val[:, 0], X_val[:, 1])
+        val_loss = criterion(val_preds, y_val)
+        logger.info(f"Validation loss: {val_loss.item():.4f}")
+
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
