@@ -37,6 +37,9 @@ playwright = "^1.55.0"
 pre-commit = "^4.3.0"
 ruff = "^0.14.1"
 pytest-asyncio = "^1.2.0"
+pytest-docker = "^3.2.3"
+psycopg2 = "^2.9.11"
+psycopg2-binary = "^2.9.11"
 
 
 [build-system]

@@ -84,7 +84,8 @@ class RatingScraper(BaseModel):
         async with httpx.AsyncClient(follow_redirects=True) as client:
             try:
                 response = await client.get(target_page)
-                response.raise_for_status()
+                if response.status_code != 200:
+                    logger.info("Non 200 status code received, retrying...")
             except httpx.RequestError as exc:
                 raise Exception(f"Error in the request to {target_page}.") from exc
         return response

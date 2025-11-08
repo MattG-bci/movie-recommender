@@ -1,5 +1,6 @@
 from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from urllib.parse import quote
 
 
 class DBSettings(BaseSettings):
@@ -12,6 +13,10 @@ class DBSettings(BaseSettings):
     model_config = SettingsConfigDict(
         env_prefix="DB_", env_file=Path(__file__).parents[1] / ".env", extra="ignore"
     )
+
+    def get_postgres_dsn(self, prefix: str = "postgres") -> str:
+        dsn = f"{prefix}://{self.USER}:{quote(self.PASS)}@{self.HOST}:{self.PORT}/{self.NAME}"
+        return dsn
 
 
 class WebScraperSettings(BaseSettings):
