@@ -5,6 +5,7 @@ import contextlib
 import psycopg2
 from settings import DBSettings
 
+
 from pytest_docker.plugin import DockerComposeExecutor, Services
 
 
@@ -23,15 +24,26 @@ def docker_compose_project_name():
     return "test-db"
 
 
+@pytest.fixture(scope="session")
+def docker_setup():
+    return ["-v down", "up --build -d"]
+
+
 @contextlib.contextmanager
 def get_docker_services(
     docker_compose_command,
     docker_compose_file,
     docker_compose_project_name,
+    docker_setup,
 ):
     docker_compose = DockerComposeExecutor(
         docker_compose_command, docker_compose_file, docker_compose_project_name
     )
+
+    if docker_setup:
+        for command in docker_setup:
+            docker_compose.execute(command)
+
     try:
         yield Services(docker_compose)
     finally:
@@ -43,11 +55,13 @@ def docker_services(
     docker_compose_command,
     docker_compose_file,
     docker_compose_project_name,
+    docker_setup,
 ):
     with get_docker_services(
         docker_compose_command,
         docker_compose_file,
         docker_compose_project_name,
+        docker_setup,
     ) as services:
         yield services
 
@@ -84,7 +98,7 @@ def is_db_responsive(host, port) -> bool:
         conn.close()
         return True
     except Exception as e:
-        print(f"DB not ready: {e}")  # Helpful for debugging
+        print(f"DB not ready: {e}")
         return False
 
 

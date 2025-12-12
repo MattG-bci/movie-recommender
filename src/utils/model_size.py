@@ -1,6 +1,5 @@
 from torch import nn
-
-from model.recommender import Recommender
+import time
 
 
 def compute_model_size(model: nn.Module) -> float:
@@ -10,6 +9,12 @@ def compute_model_size(model: nn.Module) -> float:
     return round(model_size_mb, 2)
 
 
-if __name__ == "__main__":
-    recommender = Recommender(100, 100)
-    print(compute_model_size(recommender))
+def timeit(func):
+    def inner(*args, **kwargs):
+        start_time = time.time()
+        result = func(*args, **kwargs)
+        end_time = time.time()
+        print(f"Execution time: {end_time - start_time:.4f} seconds")
+        return result
+
+    return inner

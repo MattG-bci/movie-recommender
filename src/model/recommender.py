@@ -5,6 +5,8 @@ import logging
 from schemas.movie import MovieRating
 from sklearn.model_selection import train_test_split
 
+from utils.model_size import timeit
+
 logger = logging.getLogger(__name__)
 
 
@@ -35,11 +37,13 @@ class Recommender(nn.Module):
         return preds.squeeze()
 
 
+@timeit
 def train_movie_recommender(ratings: list[MovieRating], epochs: int = 100) -> None:
-    user_ids = torch.tensor([rating.user_id for rating in ratings])
-    movie_ids = torch.tensor([rating.movie_id for rating in ratings])
+    device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+    user_ids = torch.tensor([rating.user_id for rating in ratings], device=device)
+    movie_ids = torch.tensor([rating.movie_id for rating in ratings], device=device)
     rating_values = torch.tensor(
-        [rating.rating for rating in ratings], dtype=torch.float
+        [rating.rating for rating in ratings], dtype=torch.float, device=device
     )
     n_users = len(user_ids)
     n_movies = len(movie_ids)
@@ -50,6 +54,7 @@ def train_movie_recommender(ratings: list[MovieRating], epochs: int = 100) -> No
     )
 
     model = Recommender(n_users, n_movies)
+    model.to(device)
     optimizer = optim.Adam(model.parameters(), lr=0.01)
     criterion = model.loss
 
