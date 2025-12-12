@@ -4,6 +4,8 @@ jobs:
   run-tests:
     machine:
       image: ubuntu-2204:current
+    environment:
+      PATH: /home/circleci/.local/bin:/home/circleci/.pyenv/shims:/usr/local/bin:/usr/bin:/bin
 
     steps:
       - checkout
