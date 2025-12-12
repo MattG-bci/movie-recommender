@@ -181,6 +181,7 @@ class MovieScraper(BaseModel):
                 logger.error(f"Error while scraping page {n_page}: {e}")
                 break
             if new_movies:
+                logger.info(f"Fetched {len(new_movies)} new movies from page {n_page}.")
                 return new_movies
             logger.info(f"No new movies found on page {n_page}. Scraping next page...")
             n_page += 1
