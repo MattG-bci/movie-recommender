@@ -5,7 +5,7 @@ jobs:
     machine:
       image: ubuntu-2204:current
     environment:
-      PATH: $HOME/.local/bin:$HOME/.pyenv/shims:$PATH
+      PATH: /home/circleci/.local/bin:/home/circleci/.pyenv/shims:/usr/local/bin:/usr/bin:/bin
 
     steps:
       - checkout
