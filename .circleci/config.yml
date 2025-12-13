@@ -4,8 +4,6 @@ jobs:
   run-tests:
     machine:
       image: ubuntu-2204:current
-    environment:
-      PATH: /home/circleci/.local/bin:/home/circleci/.pyenv/shims:/usr/local/bin:/usr/bin:/bin
 
     steps:
       - checkout
@@ -20,16 +18,22 @@ jobs:
             sudo apt-get install -y libpq-dev python3-dev gcc
       - run:
             name: "Install dependencies"
-            command: poetry install
+            command: |
+              export PATH="$HOME/.local/bin:$PATH"
+              poetry install
       - run:
           name: "Install Linting"
           command: curl -LsSf https://astral.sh/ruff/install.sh | sh
       - run:
             name: "Linting"
-            command: poetry run ruff format src tests
+            command: |
+              export PATH="$HOME/.local/bin:$PATH"
+              poetry run ruff format src tests
       - run:
           name: "Testing"
-          command: poetry run pytest tests
+          command: |
+            export PATH="$HOME/.local/bin:$PATH"
+            poetry run pytest tests
 
 workflows:
   run-tests-workflow: # This is the name of the workflow, feel free to change it to better match your workflow.
