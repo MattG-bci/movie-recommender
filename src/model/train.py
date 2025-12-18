@@ -1,22 +1,15 @@
 import torch
 from torch import optim
+from torch.utils.data import DataLoader
 
 from model.dataloader import construct_datasets_for_train_eval
 from model.recommender import Recommender, logger
+from schemas.modelling import ConfigTrain
 from schemas.movie import MovieRating
 from utils.model_size import timeit
 
 
-@timeit
-def train_movie_recommender(ratings: list[MovieRating], epochs: int = 50) -> None:
-    device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
-    n_users = len({rating.user_id for rating in ratings})
-    n_movies = len({rating.movie_id for rating in ratings})
-    model = Recommender(n_users, n_movies)
-    model.to(device)
-    optimizer = optim.Adam(model.parameters(), lr=0.01)
-    criterion = model.loss
-
+def prepare_data(ratings: list[MovieRating]) -> tuple[DataLoader, DataLoader]:
     train_dataset, val_dataset = construct_datasets_for_train_eval(ratings)
     train_dataloader = torch.utils.data.DataLoader(
         train_dataset, batch_size=64, shuffle=True
@@ -24,6 +17,36 @@ def train_movie_recommender(ratings: list[MovieRating], epochs: int = 50) -> Non
     val_dataloader = torch.utils.data.DataLoader(
         val_dataset, batch_size=64, shuffle=False
     )
+    return train_dataloader, val_dataloader
+
+
+def prepare_model(ratings: list[MovieRating]) -> Recommender:
+    n_users = len({rating.user_id for rating in ratings})
+    n_movies = len({rating.movie_id for rating in ratings})
+    model = Recommender(n_users, n_movies)
+    return model
+
+
+def get_device() -> torch.device:
+    return torch.device(
+        "cuda"
+        if torch.cuda.is_available()
+        else "mps"
+        if torch.backends.mps.is_available()
+        else "cpu"
+    )
+
+
+@timeit
+def train_movie_recommender(config: ConfigTrain, epochs: int = 50) -> None:
+    train_dataloader = config.train_dataloader
+    val_dataloader = config.val_dataloader
+    model = config.model
+    device = config.device
+
+    model.to(device)
+    optimizer = optim.Adam(model.parameters(), lr=0.01)
+    criterion = model.loss
 
     for epoch in range(epochs):
         logger.info(f"Epoch {epoch + 1}/{epochs}")

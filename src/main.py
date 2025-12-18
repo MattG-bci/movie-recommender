@@ -6,7 +6,8 @@ from functools import wraps
 import logging
 
 from etl.sql_queries import fetch_movie_ratings_from_db
-from model.train import train_movie_recommender
+from model.train import train_movie_recommender, get_device, prepare_model, prepare_data
+from schemas.modelling import ConfigTrain
 
 logging.basicConfig(
     level=logging.INFO,
@@ -54,7 +55,17 @@ async def run_all_ingestion() -> None:
 @async_typer_command
 async def train_recommender() -> None:
     ratings = await fetch_movie_ratings_from_db()
-    train_movie_recommender(ratings)
+    device = get_device()
+    model = prepare_model(ratings)
+    train_dataloader, val_dataloader = prepare_data(ratings)
+
+    train_config = ConfigTrain(
+        model=model,
+        train_dataloader=train_dataloader,
+        val_dataloader=val_dataloader,
+        device=device,
+    )
+    train_movie_recommender(train_config)
 
 
 if __name__ == "__main__":
