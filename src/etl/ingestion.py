@@ -28,5 +28,5 @@ async def ingest_usernames() -> None:
 
 async def ingest_movie_ratings() -> None:
     usernames = await fetch_usernames_from_db()
-    movie_ratings = await generate_movie_ratings(usernames=usernames[:20])
+    movie_ratings = await generate_movie_ratings(usernames=usernames)
     await upsert_movie_ratings(movie_ratings)

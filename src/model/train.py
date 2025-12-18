@@ -1,8 +1,10 @@
+from collections import defaultdict
+
 import torch
-from torch import optim
 from torch.utils.data import DataLoader
 
 from model.dataloader import construct_datasets_for_train_eval
+from model.evaluate import calculate_metrics
 from model.recommender import Recommender, logger
 from schemas.modelling import ConfigTrain
 from schemas.movie import MovieRating
@@ -38,19 +40,19 @@ def get_device() -> torch.device:
 
 
 @timeit
-def train_movie_recommender(config: ConfigTrain, epochs: int = 50) -> None:
+def train_movie_recommender(config: ConfigTrain, epochs: int = 25) -> None:
     train_dataloader = config.train_dataloader
     val_dataloader = config.val_dataloader
     model = config.model
     device = config.device
 
     model.to(device)
-    optimizer = optim.Adam(model.parameters(), lr=0.01)
+    optimizer = model.optimiser
     criterion = model.loss
 
     for epoch in range(epochs):
         logger.info(f"Epoch {epoch + 1}/{epochs}")
-        train_loss = []
+        train_metrics = defaultdict(list)
         for batch_idx, (batch_user_ids, batch_movie_ids, batch_ratings) in enumerate(
             train_dataloader
         ):
@@ -60,16 +62,22 @@ def train_movie_recommender(config: ConfigTrain, epochs: int = 50) -> None:
 
             train_preds = model(batch_user_ids, batch_movie_ids)
             loss = criterion(train_preds, batch_ratings)
-            train_loss.append(loss.item())
+
+            train_metrics["loss"].append(loss.item())
+            train_metrics["predictions"].extend(train_preds.detach().cpu().numpy())
+            train_metrics["targets"].extend(batch_ratings.detach().cpu().numpy())
 
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
 
-        mean_train_loss = sum(train_loss) / len(train_loss)
-        logger.info(f"Training loss: {mean_train_loss:.3f}")
+        logger.info("----Training Metrics----")
+        metrics = calculate_metrics(train_metrics)
+        logger.info(f"Train Loss: {metrics.loss:.3f}")
+        logger.info(f"Train MSE: {metrics.mse:.3f}")
 
-        validation_loss = []
+        logger.info("Starting validation...")
+        validation_metrics = defaultdict(list)
         for batch_idx, (batch_user_ids, batch_movie_ids, batch_ratings) in enumerate(
             val_dataloader
         ):
@@ -79,7 +87,14 @@ def train_movie_recommender(config: ConfigTrain, epochs: int = 50) -> None:
 
             val_preds = model(batch_user_ids, batch_movie_ids)
             val_loss = criterion(val_preds, batch_ratings)
-            validation_loss.append(val_loss.item())
 
-        mean_val_loss = sum(validation_loss) / len(validation_loss)
-        logger.info(f"Validation loss: {mean_val_loss:.3f}")
+            validation_metrics["loss"].append(val_loss.item())
+            validation_metrics["predictions"].extend(val_preds.detach().cpu().numpy())
+            validation_metrics["targets"].extend(batch_ratings.detach().cpu().numpy())
+
+        logger.info("----Validation Metrics----")
+        metrics = calculate_metrics(validation_metrics)
+        logger.info(f"Validation Loss: {metrics.loss:.3f}")
+        logger.info(f"Validation MSE: {metrics.mse:.3f}")
+        logger.info("------------------------")
+    logger.info("Training complete.")

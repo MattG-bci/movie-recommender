@@ -22,7 +22,7 @@ def construct_datasets_for_train_eval(
     assert 0.0 < train_split < 1.0, "train_split must be between 0 and 1"
     if shuffle:
         random.shuffle(ratings)
-    train_size = int(0.7 * len(ratings))
+    train_size = int(train_split * len(ratings))
     train_ratings = ratings[:train_size]
     eval_ratings = ratings[train_size:]
     return MoviesDataset(train_ratings), MoviesDataset(eval_ratings)
