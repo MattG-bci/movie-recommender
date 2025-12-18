@@ -30,3 +30,7 @@ class Recommender(nn.Module):
 
         preds = dot + self.user_bias(user_ids) + self.movie_bias(movie_ids)
         return preds.squeeze()
+
+    @property
+    def optimiser(self) -> torch.optim.Optimizer:
+        return torch.optim.Adam(self.parameters(), lr=0.01)
