@@ -2,14 +2,8 @@ from datetime import datetime
 
 import torch
 
-from model.dataloader import MoviesDataset, transform_rating_to_tensor
+from model.dataloader import transform_rating_to_tensor
 from schemas.movie import MovieRating
-
-
-def test_singleton():
-    dataloader_1 = MoviesDataset()
-    dataloader_2 = MoviesDataset()
-    assert dataloader_1 is dataloader_2
 
 
 def test_transform_rating_to_tensor():

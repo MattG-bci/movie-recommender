@@ -3,10 +3,9 @@ import random
 import torch
 
 from schemas.movie import MovieRating
-from utils.classes import Singleton
 
 
-class MoviesDataset(torch.utils.data.Dataset, metaclass=Singleton):
+class MoviesDataset(torch.utils.data.Dataset):
     def __init__(self, ratings: list[MovieRating]) -> None:
         self.ratings = [transform_rating_to_tensor(rating) for rating in ratings]
 
