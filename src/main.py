@@ -6,7 +6,7 @@ from functools import wraps
 import logging
 
 from etl.sql_queries import fetch_movie_ratings_from_db
-from model.recommender import train_movie_recommender
+from model.train import train_movie_recommender
 
 logging.basicConfig(
     level=logging.INFO,

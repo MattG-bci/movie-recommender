@@ -1,11 +1,6 @@
 import torch
-from torch import nn, optim
+from torch import nn
 import logging
-
-from schemas.movie import MovieRating
-from sklearn.model_selection import train_test_split
-
-from utils.model_size import timeit
 
 logger = logging.getLogger(__name__)
 
@@ -35,38 +30,3 @@ class Recommender(nn.Module):
 
         preds = dot + self.user_bias(user_ids) + self.movie_bias(movie_ids)
         return preds.squeeze()
-
-
-@timeit
-def train_movie_recommender(ratings: list[MovieRating], epochs: int = 100) -> None:
-    device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
-    user_ids = torch.tensor([rating.user_id for rating in ratings], device=device)
-    movie_ids = torch.tensor([rating.movie_id for rating in ratings], device=device)
-    rating_values = torch.tensor(
-        [rating.rating for rating in ratings], dtype=torch.float, device=device
-    )
-    n_users = len(user_ids)
-    n_movies = len(movie_ids)
-
-    features = torch.stack([user_ids, movie_ids], dim=1)
-    X_train, X_val, y_train, y_val = train_test_split(
-        features, rating_values, test_size=0.3, random_state=42
-    )
-
-    model = Recommender(n_users, n_movies)
-    model.to(device)
-    optimizer = optim.Adam(model.parameters(), lr=0.01)
-    criterion = model.loss
-
-    for epoch in range(epochs):
-        train_preds = model(X_train[:, 0], X_train[:, 1])
-        loss = criterion(train_preds, y_train)
-        logger.info(f"Training loss: {loss.item():.4f}")
-
-        val_preds = model(X_val[:, 0], X_val[:, 1])
-        val_loss = criterion(val_preds, y_val)
-        logger.info(f"Validation loss: {val_loss.item():.4f}")
-
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
