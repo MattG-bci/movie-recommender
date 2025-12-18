@@ -1,14 +1,18 @@
 import logging
 
+from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 
 
-def calculate_metrics(metrics: dict[str, list[float]]) -> None:
+class EvalMetrics(BaseModel):
+    loss: float
+    mse: float
+
+
+def calculate_metrics(metrics: dict[str, list[float]]) -> EvalMetrics:
     mean_loss = sum(metrics["loss"]) / len(metrics["loss"])
     preds = metrics["predictions"]
     targets = metrics["targets"]
     mse = sum((p - t) ** 2 for p, t in zip(preds, targets)) / len(targets)
-
-    logger.info(f"MSE: {mse:.4f}")
-    logger.info(f"Mean Loss: {mean_loss:.4f}")
+    return EvalMetrics(loss=mean_loss, mse=mse)

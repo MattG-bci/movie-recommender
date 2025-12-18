@@ -72,8 +72,11 @@ def train_movie_recommender(config: ConfigTrain, epochs: int = 25) -> None:
             optimizer.step()
 
         logger.info("----Training Metrics----")
-        calculate_metrics(train_metrics)
+        metrics = calculate_metrics(train_metrics)
+        logger.info(f"Train Loss: {metrics.loss}")
+        logger.info(f"Train MSE: {metrics.mse}")
 
+        logger.info("Starting validation...")
         validation_metrics = defaultdict(list)
         for batch_idx, (batch_user_ids, batch_movie_ids, batch_ratings) in enumerate(
             val_dataloader
@@ -90,4 +93,8 @@ def train_movie_recommender(config: ConfigTrain, epochs: int = 25) -> None:
             validation_metrics["targets"].extend(batch_ratings.detach().cpu().numpy())
 
         logger.info("----Validation Metrics----")
-        calculate_metrics(validation_metrics)
+        metrics = calculate_metrics(validation_metrics)
+        logger.info(f"Validation Loss: {metrics.loss}")
+        logger.info(f"Validation MSE: {metrics.mse}")
+        logger.info("------------------------")
+    logger.info("Training complete.")
