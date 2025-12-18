@@ -73,8 +73,8 @@ def train_movie_recommender(config: ConfigTrain, epochs: int = 25) -> None:
 
         logger.info("----Training Metrics----")
         metrics = calculate_metrics(train_metrics)
-        logger.info(f"Train Loss: {metrics.loss}")
-        logger.info(f"Train MSE: {metrics.mse}")
+        logger.info(f"Train Loss: {metrics.loss:.3f}")
+        logger.info(f"Train MSE: {metrics.mse:.3f}")
 
         logger.info("Starting validation...")
         validation_metrics = defaultdict(list)
@@ -94,7 +94,7 @@ def train_movie_recommender(config: ConfigTrain, epochs: int = 25) -> None:
 
         logger.info("----Validation Metrics----")
         metrics = calculate_metrics(validation_metrics)
-        logger.info(f"Validation Loss: {metrics.loss}")
-        logger.info(f"Validation MSE: {metrics.mse}")
+        logger.info(f"Validation Loss: {metrics.loss:.3f}")
+        logger.info(f"Validation MSE: {metrics.mse:.3f}")
         logger.info("------------------------")
     logger.info("Training complete.")
