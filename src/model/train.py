@@ -3,21 +3,23 @@ from collections import defaultdict
 import torch
 from torch.utils.data import DataLoader
 
-from model.dataloader import construct_datasets_for_train_eval
+from model.dataloader import construct_datasets
 from model.evaluate import calculate_metrics
 from model.recommender import Recommender, logger
-from schemas.modelling import ConfigTrain
+from schemas.modelling import TrainConfig, ModelConfig
 from schemas.movie import MovieRating
 from utils.model_size import timeit
 
 
-def prepare_data(ratings: list[MovieRating]) -> tuple[DataLoader, DataLoader]:
-    train_dataset, val_dataset = construct_datasets_for_train_eval(ratings)
+def prepare_data(
+    ratings: list[MovieRating], batch_size: int
+) -> tuple[DataLoader, DataLoader]:
+    train_dataset, val_dataset = construct_datasets(ratings)
     train_dataloader = torch.utils.data.DataLoader(
-        train_dataset, batch_size=64, shuffle=True
+        train_dataset, batch_size=batch_size, shuffle=True
     )
     val_dataloader = torch.utils.data.DataLoader(
-        val_dataset, batch_size=64, shuffle=False
+        val_dataset, batch_size=batch_size, shuffle=False
     )
     return train_dataloader, val_dataloader
 
@@ -25,7 +27,8 @@ def prepare_data(ratings: list[MovieRating]) -> tuple[DataLoader, DataLoader]:
 def prepare_model(ratings: list[MovieRating]) -> Recommender:
     n_users = len({rating.user_id for rating in ratings})
     n_movies = len({rating.movie_id for rating in ratings})
-    model = Recommender(n_users, n_movies)
+    model_config = ModelConfig(n_users=n_users, n_movies=n_movies)
+    model = Recommender(model_config)
     return model
 
 
@@ -40,9 +43,14 @@ def get_device() -> torch.device:
 
 
 @timeit
-def train_movie_recommender(config: ConfigTrain, epochs: int = 25) -> None:
-    train_dataloader = config.train_dataloader
-    val_dataloader = config.val_dataloader
+def train_movie_recommender(config: TrainConfig) -> None:
+    train_dataloader = torch.utils.data.DataLoader(
+        config.train_dataset, batch_size=config.batch_size, shuffle=True
+    )
+
+    val_dataloader = torch.utils.data.DataLoader(
+        config.val_dataset, batch_size=config.batch_size, shuffle=False
+    )
     model = config.model
     device = config.device
 
@@ -50,8 +58,8 @@ def train_movie_recommender(config: ConfigTrain, epochs: int = 25) -> None:
     optimizer = model.optimiser
     criterion = model.loss
 
-    for epoch in range(epochs):
-        logger.info(f"Epoch {epoch + 1}/{epochs}")
+    for epoch in range(config.epochs):
+        logger.info(f"--------EPOCH {epoch + 1}/{config.epochs}--------")
         train_metrics = defaultdict(list)
         for batch_idx, (batch_user_ids, batch_movie_ids, batch_ratings) in enumerate(
             train_dataloader
@@ -96,5 +104,5 @@ def train_movie_recommender(config: ConfigTrain, epochs: int = 25) -> None:
         metrics = calculate_metrics(validation_metrics)
         logger.info(f"Validation Loss: {metrics.loss:.3f}")
         logger.info(f"Validation MSE: {metrics.mse:.3f}")
-        logger.info("------------------------")
+        logger.info("--------------------------")
     logger.info("Training complete.")

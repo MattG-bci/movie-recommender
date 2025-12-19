@@ -16,7 +16,7 @@ class MoviesDataset(torch.utils.data.Dataset):
         return self.ratings[idx]
 
 
-def construct_datasets_for_train_eval(
+def construct_datasets(
     ratings: list[MovieRating], train_split: float = 0.7, shuffle: bool = True
 ) -> tuple[MoviesDataset, MoviesDataset]:
     assert 0.0 < train_split < 1.0, "train_split must be between 0 and 1"
