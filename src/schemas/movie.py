@@ -32,5 +32,3 @@ class MovieRatingIn(BaseModel):
 
 class MovieRating(MovieRatingIn):
     id: int
-    created_at: datetime.datetime
-    updated_at: datetime.datetime

@@ -1,35 +1,11 @@
 from collections import defaultdict
 
 import torch
-from torch.utils.data import DataLoader
 
-from model.dataloader import construct_datasets
 from model.evaluate import calculate_metrics
-from model.recommender import Recommender, logger
-from schemas.modelling import TrainConfig, ModelConfig
-from schemas.movie import MovieRating
+from model.recommender import logger
+from schemas.modelling import TrainConfig
 from utils.model_size import timeit
-
-
-def prepare_data(
-    ratings: list[MovieRating], batch_size: int
-) -> tuple[DataLoader, DataLoader]:
-    train_dataset, val_dataset = construct_datasets(ratings)
-    train_dataloader = torch.utils.data.DataLoader(
-        train_dataset, batch_size=batch_size, shuffle=True
-    )
-    val_dataloader = torch.utils.data.DataLoader(
-        val_dataset, batch_size=batch_size, shuffle=False
-    )
-    return train_dataloader, val_dataloader
-
-
-def prepare_model(ratings: list[MovieRating]) -> Recommender:
-    n_users = len({rating.user_id for rating in ratings})
-    n_movies = len({rating.movie_id for rating in ratings})
-    model_config = ModelConfig(n_users=n_users, n_movies=n_movies)
-    model = Recommender(model_config)
-    return model
 
 
 def get_device() -> torch.device:

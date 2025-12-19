@@ -21,3 +21,4 @@ class ModelConfig:
     n_movies: int
     embedding_dim: int = 64
     learning_rate: float = 0.01
+    loss: nn.Module = nn.MSELoss()

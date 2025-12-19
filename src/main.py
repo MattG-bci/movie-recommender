@@ -7,7 +7,8 @@ import logging
 
 from etl.sql_queries import fetch_movie_ratings_from_db
 from model.dataloader import construct_datasets
-from model.train import train_movie_recommender, get_device, prepare_model
+from model.train import train_movie_recommender, get_device
+from model.recommender import prepare_model_config, Recommender
 from schemas.modelling import TrainConfig
 
 logging.basicConfig(
@@ -57,7 +58,8 @@ async def run_all_ingestion() -> None:
 async def train_recommender() -> None:
     ratings = await fetch_movie_ratings_from_db()
     device = get_device()
-    model = prepare_model(ratings)
+    model_config = prepare_model_config(ratings)
+    model = Recommender(model_config)
     train_dataset, val_dataset = construct_datasets(ratings)
     train_config = TrainConfig(
         model=model,
