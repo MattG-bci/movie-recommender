@@ -1,13 +1,24 @@
 import torch
+from torch import nn
 from dataclasses import dataclass
-from torch.utils.data import DataLoader
 
-from model.recommender import Recommender
+from model.dataloader import MoviesDataset
 
 
 @dataclass
-class ConfigTrain:
-    model: Recommender
-    train_dataloader: DataLoader
-    val_dataloader: DataLoader
+class TrainConfig:
+    model: nn.Module
+    train_dataset: MoviesDataset
+    val_dataset: MoviesDataset
     device: torch.device
+    epochs: int = 25
+    batch_size: int = 64
+
+
+@dataclass
+class ModelConfig:
+    n_users: int
+    n_movies: int
+    embedding_dim: int = 64
+    learning_rate: float = 0.01
+    loss: nn.Module = nn.MSELoss()

@@ -1,5 +1,3 @@
-from datetime import datetime
-
 import torch
 
 from model.dataloader import transform_rating_to_tensor
@@ -12,8 +10,6 @@ def test_transform_rating_to_tensor():
         user_id=1,
         movie_id=2,
         rating=4.5,
-        created_at=datetime(2024, 1, 1),
-        updated_at=datetime(2024, 1, 1),
     )
     res = transform_rating_to_tensor(mock_movie_rating)
     assert res == (

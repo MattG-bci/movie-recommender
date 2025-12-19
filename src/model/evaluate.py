@@ -12,6 +12,10 @@ class EvalMetrics(BaseModel):
 
 
 def calculate_metrics(metrics: dict[str, list[torch.tensor]]) -> EvalMetrics:
+    assert "loss" in metrics
+    assert "predictions" in metrics
+    assert "targets" in metrics
+
     mean_loss = sum(metrics["loss"]) / len(metrics["loss"])
     preds = metrics["predictions"]
     targets = metrics["targets"]
