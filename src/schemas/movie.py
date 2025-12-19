@@ -1,5 +1,3 @@
-import datetime
-
 from pydantic import BaseModel
 
 
@@ -20,8 +18,6 @@ class Movie(BaseModel):
     director: str
     country: str
     actors: list[str]
-    created_at: datetime.datetime
-    updated_at: datetime.datetime
 
 
 class MovieRatingIn(BaseModel):
