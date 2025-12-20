@@ -1,6 +1,7 @@
 from collections import defaultdict
 
 import torch
+import torch.nn as nn
 
 from model.evaluate import calculate_metrics
 from model.recommender import logger
@@ -19,7 +20,7 @@ def get_device() -> torch.device:
 
 
 @timeit
-def train_movie_recommender(config: TrainConfig) -> None:
+def train_movie_recommender(config: TrainConfig) -> nn.Module:
     train_dataloader = torch.utils.data.DataLoader(
         config.train_dataset, batch_size=config.batch_size, shuffle=True
     )
@@ -82,3 +83,4 @@ def train_movie_recommender(config: TrainConfig) -> None:
         logger.info(f"Validation MSE: {metrics.mse:.3f}")
         logger.info("--------------------------")
     logger.info("Training complete.")
+    return model

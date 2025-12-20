@@ -39,6 +39,19 @@ class Recommender(nn.Module):
         preds = dot + self.user_bias(user_ids) + self.movie_bias(movie_ids)
         return preds.squeeze()
 
+    def predict(self, user_id: torch.Tensor, movie_ids: torch.Tensor) -> torch.Tensor:
+        preds = self.forward(user_id, movie_ids)
+        # ratings only range from 1 to 10
+        clamped_preds = torch.clamp(min=1.0, max=10.0, input=preds)
+        return clamped_preds.squeeze()
+
+    def get_top_k_recommendations(
+        self, user_id: torch.Tensor, movie_ids: torch.Tensor, k: int = 5
+    ) -> torch.Tensor:
+        preds = self.predict(user_id, movie_ids)
+        top_recommendations = torch.topk(preds, k).indices.detach()
+        return top_recommendations
+
     @property
     def optimiser(self) -> torch.optim.Optimizer:
         return torch.optim.Adam(self.parameters(), lr=self.config.learning_rate)
