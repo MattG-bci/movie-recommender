@@ -14,7 +14,7 @@ from etl.sql_queries import (
 from model.dataloader import construct_datasets
 from model.train import train_movie_recommender, get_device
 from model.recommender import prepare_model_config, Recommender
-from schemas.modelling import TrainConfig, ModelConfig
+from schemas.modelling import TrainConfig, ModelConfig, PATH_TO_MODEL_WEIGHTS
 
 logging.basicConfig(
     level=logging.INFO,
@@ -74,7 +74,7 @@ async def train_recommender() -> None:
     )
     model = train_movie_recommender(train_config)
     logging.info("Saving trained model...")
-    torch.save(model.state_dict(), "recommender_model.pth")
+    torch.save(model.state_dict(), PATH_TO_MODEL_WEIGHTS)
 
 
 @app.command()
@@ -93,9 +93,7 @@ async def recommend_movies(user_name: str, top_k: int = 5):
     if user_id is None:
         raise KeyError(f"User name {user_name} does not exist in the database")
 
-    state_dict = torch.load(
-        "src/recommender_model.pth", map_location=torch.device("cpu")
-    )
+    state_dict = torch.load(PATH_TO_MODEL_WEIGHTS, map_location=torch.device("cpu"))
     model_config = ModelConfig(n_users=n_users, n_movies=n_movies)
     model = Recommender(model_config)
     model.load_state_dict(state_dict)
