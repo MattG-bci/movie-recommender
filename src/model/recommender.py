@@ -4,7 +4,7 @@ from torch import nn
 import logging
 
 from schemas.modelling import ModelConfig
-from schemas.movie import MovieRating
+from schemas.movie import Movie
 from schemas.users import User
 
 logger = logging.getLogger(__name__)
@@ -59,7 +59,7 @@ class Recommender(nn.Module):
         return torch.optim.Adam(self.parameters(), lr=self.config.learning_rate)
 
 
-def prepare_model_config(movies: list[MovieRating], users: list[User]) -> ModelConfig:
+def prepare_model_config(movies: list[Movie], users: list[User]) -> ModelConfig:
     n_users = len({user.id for user in users})
     n_movies = len({movie.id for movie in movies})
     model_config = ModelConfig(n_users=n_users, n_movies=n_movies)

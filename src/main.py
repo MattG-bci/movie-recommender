@@ -12,7 +12,7 @@ from etl.sql_queries import (
     fetch_usernames_from_db,
 )
 from model.dataloader import construct_datasets
-from model.train import train_movie_recommender, get_device
+from model.train import train_movie_recommender, get_device, preprocess_movie_ratings
 from model.recommender import (
     prepare_model_config,
     Recommender,
@@ -69,9 +69,11 @@ async def train_recommender() -> None:
     movies = await fetch_movies_from_db()
     user_names = await fetch_usernames_from_db()
     device = get_device()
+
     model_config = prepare_model_config(movies, user_names)
     model = Recommender(model_config)
-    train_dataset, val_dataset = construct_datasets(ratings)
+    processed_ratings = preprocess_movie_ratings(ratings, movies, user_names)
+    train_dataset, val_dataset = construct_datasets(processed_ratings)
     train_config = TrainConfig(
         model=model,
         train_dataset=train_dataset,
@@ -88,7 +90,6 @@ async def train_recommender() -> None:
 async def recommend_movies(user_name: str, top_k: int = 5):
     movies = await fetch_movies_from_db()
     user_names = await fetch_usernames_from_db()
-    ratings = await fetch_movie_ratings_from_db()
 
     map_movie_id_to_recommender_id = get_model_id_to_recommender_id_mapping(
         movies, "id"
@@ -103,11 +104,9 @@ async def recommend_movies(user_name: str, top_k: int = 5):
         map_movie_id_to_recommender_id[movie.id]: movie.title for movie in movies
     }
 
-    movie_ids = list(
-        {map_movie_id_to_recommender_id[rating.movie_id] for rating in ratings}
-    )
+    movie_ids = list({map_movie_id_to_recommender_id[movie.id] for movie in movies})
     n_movies = len(movie_ids)
-    n_users = len({rating.user_id for rating in ratings})
+    n_users = len({user.id for user in user_names})
 
     user_id = map_user_name_to_id.get(user_name)
     if user_id is None:
@@ -122,7 +121,7 @@ async def recommend_movies(user_name: str, top_k: int = 5):
     recommendations = model.get_top_k_recommendations(user_id, movie_ids, top_k)
 
     movie_names = [
-        map_movie_id_to_name.get(recommended_movie_id)
+        map_movie_id_to_name.get(int(recommended_movie_id))
         for recommended_movie_id in recommendations
     ]
     logging.info(f"Here is top-{top_k} recommended movies: {movie_names}")
