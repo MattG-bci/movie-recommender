@@ -1,10 +1,20 @@
 from datetime import datetime
-from schemas.movie import Movie
+
+from model.train import preprocess_movie_ratings
+from schemas.movie import MovieRating, Movie
 from schemas.users import User
-from src.model.recommender import prepare_model_config
 
 
-def test_prepare_model_config():
+def test_preprocess_movie_ratings():
+    mock_ratings = [
+        MovieRating(
+            id=7,
+            user_id=1,
+            movie_id=1,
+            rating=3.0,
+        ),
+        MovieRating(id=8, user_id=3, movie_id=2, rating=5.0),
+    ]
     mock_movies = [
         Movie(
             id=1,
@@ -54,6 +64,15 @@ def test_prepare_model_config():
             updated_at=datetime(2024, 1, 1),
         ),
     ]
-    model_config = prepare_model_config(mock_movies, mock_users)
-    assert model_config.n_users == 3
-    assert model_config.n_movies == 3
+    result = preprocess_movie_ratings(mock_ratings, mock_movies, mock_users)
+
+    expected = [
+        MovieRating(
+            id=7,
+            user_id=0,
+            movie_id=0,
+            rating=3.0,
+        ),
+        MovieRating(id=8, user_id=2, movie_id=1, rating=5.0),
+    ]
+    assert result == expected

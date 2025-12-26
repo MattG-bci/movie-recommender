@@ -1,10 +1,13 @@
 from collections import defaultdict
 
 import torch
+import torch.nn as nn
 
 from model.evaluate import calculate_metrics
-from model.recommender import logger
+from model.recommender import logger, get_model_id_to_recommender_id_mapping
 from schemas.modelling import TrainConfig
+from schemas.movie import MovieRating, Movie
+from schemas.users import User
 from utils.model_size import timeit
 
 
@@ -18,8 +21,27 @@ def get_device() -> torch.device:
     )
 
 
+def preprocess_movie_ratings(
+    ratings: list[MovieRating], movies: list[Movie], users: list[User]
+) -> list[MovieRating]:
+    map_movie_id_to_recommender_id = get_model_id_to_recommender_id_mapping(
+        movies, "id"
+    )
+    map_user_id_to_recommender_id = get_model_id_to_recommender_id_mapping(users, "id")
+    ratings = [
+        rating.model_copy(
+            update={
+                "user_id": map_user_id_to_recommender_id[rating.user_id],
+                "movie_id": map_movie_id_to_recommender_id[rating.movie_id],
+            }
+        )
+        for rating in ratings
+    ]
+    return ratings
+
+
 @timeit
-def train_movie_recommender(config: TrainConfig) -> None:
+def train_movie_recommender(config: TrainConfig) -> nn.Module:
     train_dataloader = torch.utils.data.DataLoader(
         config.train_dataset, batch_size=config.batch_size, shuffle=True
     )
@@ -82,3 +104,4 @@ def train_movie_recommender(config: TrainConfig) -> None:
         logger.info(f"Validation MSE: {metrics.mse:.3f}")
         logger.info("--------------------------")
     logger.info("Training complete.")
+    return model

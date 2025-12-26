@@ -5,6 +5,9 @@ from dataclasses import dataclass
 from model.dataloader import MoviesDataset
 
 
+PATH_TO_MODEL_WEIGHTS = "models/recommender_model.pth"
+
+
 @dataclass
 class TrainConfig:
     model: nn.Module
