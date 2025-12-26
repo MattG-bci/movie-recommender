@@ -14,7 +14,7 @@ class TrainConfig:
     train_dataset: MoviesDataset
     val_dataset: MoviesDataset
     device: torch.device
-    epochs: int = 25
+    epochs: int = 10
     batch_size: int = 64
 
 
