@@ -23,22 +23,25 @@ class Recommender(nn.Module):
         self.head = nn.Linear(
             self.user_embedding.embedding_dim + self.movie_embedding.embedding_dim, 1
         )
+
         self.loss = self.config.loss
 
+        self.dropout = nn.Dropout(p=0.2)
         self.user_bias = nn.Embedding(self.config.n_users, 1)
         self.movie_bias = nn.Embedding(self.config.n_movies, 1)
-        nn.init.normal_(self.user_embedding.weight, std=0.1)
-        nn.init.normal_(self.movie_embedding.weight, std=0.1)
+        nn.init.normal_(self.user_embedding.weight, std=0.01)
+        nn.init.normal_(self.movie_embedding.weight, std=0.01)
         nn.init.zeros_(self.user_bias.weight)
         nn.init.zeros_(self.movie_bias.weight)
 
     def forward(self, user_ids: torch.Tensor, movie_ids: torch.Tensor) -> torch.Tensor:
-        user_vecs = self.user_embedding(user_ids)
-        movie_vecs = self.movie_embedding(movie_ids)
+        user_vecs = self.dropout(self.user_embedding(user_ids))
+        movie_vecs = self.dropout(self.movie_embedding(movie_ids))
 
-        dot = (user_vecs * movie_vecs).sum(dim=1, keepdim=True)
+        out = torch.concat([user_vecs, movie_vecs], dim=1)
+        preds = self.head(out)
 
-        preds = dot + self.user_bias(user_ids) + self.movie_bias(movie_ids)
+        preds = preds + self.user_bias(user_ids) + self.movie_bias(movie_ids)
         return preds.squeeze()
 
     def predict(self, user_id: torch.Tensor, movie_ids: torch.Tensor) -> torch.Tensor:
@@ -56,7 +59,11 @@ class Recommender(nn.Module):
 
     @property
     def optimiser(self) -> torch.optim.Optimizer:
-        return torch.optim.Adam(self.parameters(), lr=self.config.learning_rate)
+        return torch.optim.Adam(
+            self.parameters(),
+            lr=self.config.learning_rate,
+            weight_decay=self.config.weight_decay,
+        )
 
 
 def prepare_model_config(movies: list[Movie], users: list[User]) -> ModelConfig:

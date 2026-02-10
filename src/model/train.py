@@ -59,6 +59,7 @@ def train_movie_recommender(config: TrainConfig) -> nn.Module:
     for epoch in range(config.epochs):
         logger.info(f"--------EPOCH {epoch + 1}/{config.epochs}--------")
         train_metrics = defaultdict(list)
+        model.train()
         for batch_idx, (batch_user_ids, batch_movie_ids, batch_ratings) in enumerate(
             train_dataloader
         ):
@@ -85,6 +86,7 @@ def train_movie_recommender(config: TrainConfig) -> nn.Module:
 
         logger.info("Starting validation...")
         validation_metrics = defaultdict(list)
+        model.eval()
         for batch_idx, (batch_user_ids, batch_movie_ids, batch_ratings) in enumerate(
             val_dataloader
         ):
