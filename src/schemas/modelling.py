@@ -25,3 +25,4 @@ class ModelConfig:
     embedding_dim: int = 64
     learning_rate: float = 0.01
     loss: nn.Module = nn.MSELoss()
+    weight_decay: float = 0.0001
