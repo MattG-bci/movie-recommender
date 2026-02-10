@@ -1,0 +1,15 @@
+{
+  "builds": [
+    {
+      "src": "src/api/app.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "src/api/app.py"
+    }
+  ],
+  "installCommand": "pip install poetry && poetry install"
+}
