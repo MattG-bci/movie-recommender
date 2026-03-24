@@ -90,6 +90,17 @@ async def fetch_movie_ratings_from_db(conn: asyncpg.Connection) -> list[MovieRat
 
 
 @inject_db_connection
+async def fetch_movie_ratings_from_db_for_movie(
+    conn: asyncpg.Connection,
+    movie_id: int,
+    limit: int,
+) -> list[MovieRating]:
+    query = f"SELECT id, user_id, movie_id, rating FROM movie_ratings WHERE movie_id = {movie_id} LIMIT {limit}"
+    rows = await conn.fetch(query)
+    return [MovieRating(**dict(row)) for row in rows]
+
+
+@inject_db_connection
 async def upsert_to_db(
     conn: asyncpg.Connection,
     data_to_upsert: list[BaseModel],

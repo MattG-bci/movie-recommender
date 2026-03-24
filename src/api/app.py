@@ -2,7 +2,11 @@ import uvicorn
 from fastapi import FastAPI, HTTPException
 from starlette.status import HTTP_404_NOT_FOUND
 
-from etl.sql_queries import fetch_movie_ratings_from_db, fetch_usernames_from_db
+from etl.sql_queries import (
+    fetch_movie_ratings_from_db,
+    fetch_usernames_from_db,
+    fetch_movie_ratings_from_db_for_movie,
+)
 from schemas.movie import MovieRating
 
 app = FastAPI()
@@ -18,11 +22,11 @@ async def get_readiness() -> dict[str, int]:
     return {"status": 200}
 
 
-@app.get("/ratings")
-async def get_ratings(movie_id: int | None = None) -> list[MovieRating]:
-    movies = await fetch_movie_ratings_from_db()
-    if movie_id is not None:
-        movies = [movie for movie in movies if movie.movie_id == movie_id]
+@app.get("/ratings/{movie_id}")
+async def get_ratings(
+    movie_id: int | None = None, limit: int = 100, offset: int = 0
+) -> list[MovieRating]:
+    movies = await fetch_movie_ratings_from_db_for_movie(movie_id, limit, offset)
     return movies
 
 
