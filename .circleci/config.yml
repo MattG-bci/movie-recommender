@@ -20,7 +20,7 @@ jobs:
             name: "Install dependencies"
             command: |
               export PATH="$HOME/.local/bin:$PATH"
-              poetry lock --no-update
+              poetry lock
               poetry install
       - run:
           name: "Install Linting"
