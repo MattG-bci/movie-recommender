@@ -11,7 +11,7 @@
       "dest": "src/api/app.py"
     }
   ],
-  "installCommand": "pip install poetry && poetry install",
+  "installCommand": "pip install poetry && poetry install --only main",
   "build": {
     "env": {
       "PYTHON_VERSION": "3.12"
