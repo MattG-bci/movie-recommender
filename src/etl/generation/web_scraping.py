@@ -18,7 +18,6 @@ import itertools
 from etl.sql_queries import fetch_usernames_from_db, fetch_movies_from_db
 from schemas.movie import MovieRatingIn, MovieIn
 from schemas.users import UserIn, User
-from settings import WebScraperSettings
 import logging
 
 logger = logging.getLogger(__name__)
@@ -78,6 +77,7 @@ class RatingScraper(BaseModel):
     usernames: list[User]
     map_username_to_id: dict[str, int]
     map_movie_to_id: dict[str, int]
+    base_url: str = "https://letterboxd.com"
 
     @retry(wait=wait_exponential(multiplier=1, min=4, max=10))
     async def request_data(self, target_page: str) -> httpx.Response:
@@ -123,7 +123,7 @@ class RatingScraper(BaseModel):
 
     async def scrape_data_per_username(self, username: str) -> list[tuple[str, float]]:
         logger.info(f"Scraping ratings for user: {username}")
-        target_page = os.path.join(WebScraperSettings().RATINGS_PAGE, username, "films")
+        target_page = os.path.join(self.base_url, username, "films")
         response = await self.request_data(target_page)
         soup = BeautifulSoup(response.content, features="html.parser")
 
@@ -165,6 +165,7 @@ class RatingScraper(BaseModel):
 
 class MovieScraper(BaseModel):
     movie_page_url: str
+    base_url: str = "https://letterboxd.com"
 
     async def get_data_incremental(self) -> list[MovieIn]:
         existing_movies = await fetch_movies_from_db()
@@ -203,7 +204,7 @@ class MovieScraper(BaseModel):
             release_year = data[-1]
             release_year = int(release_year.strip("()"))
 
-            movie_link = urljoin("https://letterboxd.com", movie_information["href"])
+            movie_link = urljoin(self.base_url, movie_information["href"])
             resp = await self.request_data(movie_link)
             logger.info("Processing response...")
             movie_soup = BeautifulSoup(resp, features="html.parser")
