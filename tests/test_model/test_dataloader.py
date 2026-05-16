@@ -1,11 +1,11 @@
 import torch
 
 from model.dataloader import transform_rating_to_tensor
-from schemas.movie import MovieRating
+from schemas.movie import MovieRatingWithId
 
 
 def test_transform_rating_to_tensor():
-    mock_movie_rating = MovieRating(
+    mock_movie_rating = MovieRatingWithId(
         id=1,
         user_id=1,
         movie_id=2,

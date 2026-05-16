@@ -5,7 +5,7 @@ from pydantic import BaseModel
 
 from typing import Any, Callable, Coroutine
 
-from schemas.movie import MovieRatingIn, Movie, MovieRating
+from schemas.movie import MovieRatingIn, Movie, MovieRatingWithId
 from schemas.users import UserIn, User
 from settings import DBSettings
 
@@ -83,10 +83,12 @@ async def fetch_movies_from_db(conn: asyncpg.Connection) -> list[Movie]:
 
 
 @inject_db_connection
-async def fetch_movie_ratings_from_db(conn: asyncpg.Connection) -> list[MovieRating]:
+async def fetch_movie_ratings_from_db(
+    conn: asyncpg.Connection,
+) -> list[MovieRatingWithId]:
     query = "SELECT id, user_id, movie_id, rating FROM movie_ratings"
     rows = await conn.fetch(query)
-    return [MovieRating(**dict(row)) for row in rows]
+    return [MovieRatingWithId(**dict(row)) for row in rows]
 
 
 @inject_db_connection
@@ -94,10 +96,10 @@ async def fetch_movie_ratings_from_db_for_movie(
     conn: asyncpg.Connection,
     movie_id: int,
     limit: int,
-) -> list[MovieRating]:
+) -> list[MovieRatingWithId]:
     query = f"SELECT id, user_id, movie_id, rating FROM movie_ratings WHERE movie_id = {movie_id} LIMIT {limit}"
     rows = await conn.fetch(query)
-    return [MovieRating(**dict(row)) for row in rows]
+    return [MovieRatingWithId(**dict(row)) for row in rows]
 
 
 @inject_db_connection

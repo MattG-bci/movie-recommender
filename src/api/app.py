@@ -7,7 +7,7 @@ from etl.sql_queries import (
     fetch_usernames_from_db,
     fetch_movie_ratings_from_db_for_movie,
 )
-from schemas.movie import MovieRating
+from schemas.movie import MovieRatingWithId
 
 app = FastAPI()
 
@@ -25,13 +25,13 @@ async def get_readiness() -> dict[str, int]:
 @app.get("/ratings/{movie_id}")
 async def get_ratings(
     movie_id: int | None = None, limit: int = 100, offset: int = 0
-) -> list[MovieRating]:
+) -> list[MovieRatingWithId]:
     movies = await fetch_movie_ratings_from_db_for_movie(movie_id, limit, offset)
     return movies
 
 
 @app.get("/ratings/{user}")
-async def get_ratings_for_user(user: str) -> list[MovieRating]:
+async def get_ratings_for_user(user: str) -> list[MovieRatingWithId]:
     movies = await fetch_movie_ratings_from_db()
     users = await fetch_usernames_from_db()
     map_user_name_to_id = {user.username: user.id for user in users}

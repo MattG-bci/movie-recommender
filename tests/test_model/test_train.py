@@ -1,19 +1,19 @@
 from datetime import datetime
 
 from model.train import preprocess_movie_ratings
-from schemas.movie import MovieRating, Movie
+from schemas.movie import MovieRatingWithId, Movie
 from schemas.users import User
 
 
 def test_preprocess_movie_ratings():
     mock_ratings = [
-        MovieRating(
+        MovieRatingWithId(
             id=7,
             user_id=1,
             movie_id=1,
             rating=3.0,
         ),
-        MovieRating(id=8, user_id=3, movie_id=2, rating=5.0),
+        MovieRatingWithId(id=8, user_id=3, movie_id=2, rating=5.0),
     ]
     mock_movies = [
         Movie(
@@ -67,12 +67,12 @@ def test_preprocess_movie_ratings():
     result = preprocess_movie_ratings(mock_ratings, mock_movies, mock_users)
 
     expected = [
-        MovieRating(
+        MovieRatingWithId(
             id=7,
             user_id=0,
             movie_id=0,
             rating=3.0,
         ),
-        MovieRating(id=8, user_id=2, movie_id=1, rating=5.0),
+        MovieRatingWithId(id=8, user_id=2, movie_id=1, rating=5.0),
     ]
     assert result == expected

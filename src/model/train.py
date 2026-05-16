@@ -6,7 +6,7 @@ import torch.nn as nn
 from model.evaluate import calculate_metrics
 from model.recommender import logger, get_model_id_to_recommender_id_mapping
 from schemas.modelling import TrainConfig
-from schemas.movie import MovieRating, Movie
+from schemas.movie import MovieRatingWithId, Movie
 from schemas.users import User
 from utils.model_size import timeit
 
@@ -22,8 +22,8 @@ def get_device() -> torch.device:
 
 
 def preprocess_movie_ratings(
-    ratings: list[MovieRating], movies: list[Movie], users: list[User]
-) -> list[MovieRating]:
+    ratings: list[MovieRatingWithId], movies: list[Movie], users: list[User]
+) -> list[MovieRatingWithId]:
     map_movie_id_to_recommender_id = get_model_id_to_recommender_id_mapping(
         movies, "id"
     )
