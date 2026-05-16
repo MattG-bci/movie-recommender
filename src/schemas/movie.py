@@ -20,11 +20,17 @@ class Movie(BaseModel):
     actors: list[str]
 
 
+class MovieRating(BaseModel):
+    username: str
+    movie_name: str
+    rating: float
+
+
 class MovieRatingIn(BaseModel):
     user_id: int
     movie_id: int
     rating: float
 
 
-class MovieRating(MovieRatingIn):
+class MovieRatingWithId(MovieRatingIn):
     id: int

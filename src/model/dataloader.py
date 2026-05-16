@@ -2,11 +2,11 @@ import random
 
 import torch
 
-from schemas.movie import MovieRating
+from schemas.movie import MovieRatingWithId
 
 
 class MoviesDataset(torch.utils.data.Dataset):
-    def __init__(self, ratings: list[MovieRating]) -> None:
+    def __init__(self, ratings: list[MovieRatingWithId]) -> None:
         self.ratings = [transform_rating_to_tensor(rating) for rating in ratings]
 
     def __len__(self) -> int:
@@ -17,7 +17,7 @@ class MoviesDataset(torch.utils.data.Dataset):
 
 
 def construct_datasets(
-    ratings: list[MovieRating], train_split: float = 0.7, shuffle: bool = True
+    ratings: list[MovieRatingWithId], train_split: float = 0.7, shuffle: bool = True
 ) -> tuple[MoviesDataset, MoviesDataset]:
     assert 0.0 < train_split < 1.0, "train_split must be between 0 and 1"
     if shuffle:
@@ -28,7 +28,7 @@ def construct_datasets(
     return MoviesDataset(train_ratings), MoviesDataset(eval_ratings)
 
 
-def transform_rating_to_tensor(rating: MovieRating) -> tuple[torch.tensor, ...]:
+def transform_rating_to_tensor(rating: MovieRatingWithId) -> tuple[torch.tensor, ...]:
     user_id_tensor = torch.tensor(rating.user_id, dtype=torch.long)
     movie_id_tensor = torch.tensor(rating.movie_id, dtype=torch.long)
     rating_value_tensor = torch.tensor(rating.rating, dtype=torch.float)

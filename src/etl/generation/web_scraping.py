@@ -16,7 +16,7 @@ import os
 import itertools
 
 from etl.sql_queries import fetch_usernames_from_db, fetch_movies_from_db
-from schemas.movie import MovieRatingIn, MovieIn
+from schemas.movie import MovieIn, MovieRatingWithId
 from schemas.users import UserIn, User
 from settings import WebScraperSettings
 import logging
@@ -76,8 +76,6 @@ class UserScraper(BaseModel):
 
 class RatingScraper(BaseModel):
     usernames: list[User]
-    map_username_to_id: dict[str, int]
-    map_movie_to_id: dict[str, int]
 
     @retry(wait=wait_exponential(multiplier=1, min=4, max=10))
     async def request_data(self, target_page: str) -> httpx.Response:
@@ -90,7 +88,7 @@ class RatingScraper(BaseModel):
                 raise Exception(f"Error in the request to {target_page}.") from exc
         return response
 
-    async def scrape_data(self) -> list[MovieRatingIn]:
+    async def scrape_data(self) -> list[MovieRatingWithId]:
         tasks = [
             self.scrape_data_per_username(username.username)
             for username in self.usernames
@@ -99,20 +97,12 @@ class RatingScraper(BaseModel):
 
         movie_ratings = []
         for user, user_ratings in zip(self.usernames, results):
-            logger.info(
-                f"Fetched {len(user_ratings)} ratings for user: {user.username}"
-            )
+            username = user.username
+            logger.info(f"Fetched {len(user_ratings)} ratings for user: {username}")
             for title, movie_rating in user_ratings:
-                user_id = self.map_username_to_id.get(user.username)
-                movie_id = self.map_movie_to_id.get(title)
-                if movie_id is None:
-                    logger.info(
-                        f"Movie '{title}' not found in the database. Skipping rating for user '{user.username}'."
-                    )
-                    continue
                 movie_ratings.append(
-                    MovieRatingIn(
-                        user_id=user_id, movie_id=movie_id, rating=movie_rating
+                    MovieRatingWithId(
+                        username=username, movie_name=title, rating=movie_rating
                     )
                 )
 
