@@ -3,20 +3,24 @@ from urllib.parse import urljoin
 from bs4 import BeautifulSoup
 
 from httpx import Response
+from playwright.async_api import Browser
 from pydantic import BaseModel
 from requests import get
 from requests.exceptions import RequestException
 
+from playwright_stealth.stealth import Stealth
+
 import httpx
 import asyncio
+
 from tenacity import retry, wait_exponential
 from playwright.async_api import async_playwright
 
 import os
 import itertools
 
-from etl.sql_queries import fetch_usernames_from_db, fetch_movies_from_db
-from schemas.movie import MovieIn, MovieRatingWithId
+from etl.sql_queries import fetch_usernames_from_db
+from schemas.movie import MovieIn, MovieRating
 from schemas.users import UserIn, User
 from settings import WebScraperSettings
 import logging
@@ -59,7 +63,9 @@ class UserScraper(BaseModel):
     @staticmethod
     def request_data(usernames_page: str) -> Response:
         try:
-            username_response = get(usernames_page)
+            username_response = get(
+                usernames_page, headers=WebScraperSettings().HEADERS
+            )
         except RequestException:
             raise RequestException("Error in the request to the usernames page.")
         return username_response
@@ -79,7 +85,9 @@ class RatingScraper(BaseModel):
 
     @retry(wait=wait_exponential(multiplier=1, min=4, max=10))
     async def request_data(self, target_page: str) -> httpx.Response:
-        async with httpx.AsyncClient(follow_redirects=True) as client:
+        async with httpx.AsyncClient(
+            follow_redirects=True, headers=WebScraperSettings().HEADERS
+        ) as client:
             try:
                 response = await client.get(target_page)
                 if response.status_code != 200:
@@ -88,12 +96,11 @@ class RatingScraper(BaseModel):
                 raise Exception(f"Error in the request to {target_page}.") from exc
         return response
 
-    async def scrape_data(self) -> list[MovieRatingWithId]:
-        tasks = [
-            self.scrape_data_per_username(username.username)
+    async def scrape_data(self) -> list[MovieRating]:
+        results = [
+            await self.scrape_data_per_username(username.username)
             for username in self.usernames
         ]
-        results = await asyncio.gather(*tasks)
 
         movie_ratings = []
         for user, user_ratings in zip(self.usernames, results):
@@ -101,7 +108,7 @@ class RatingScraper(BaseModel):
             logger.info(f"Fetched {len(user_ratings)} ratings for user: {username}")
             for title, movie_rating in user_ratings:
                 movie_ratings.append(
-                    MovieRatingWithId(
+                    MovieRating(
                         username=username, movie_name=title, rating=movie_rating
                     )
                 )
@@ -113,7 +120,9 @@ class RatingScraper(BaseModel):
 
     async def scrape_data_per_username(self, username: str) -> list[tuple[str, float]]:
         logger.info(f"Scraping ratings for user: {username}")
-        target_page = os.path.join(WebScraperSettings().RATINGS_PAGE, username, "films")
+        target_page = os.path.join(
+            WebScraperSettings().RATINGS_PAGE, username, "films/"
+        )
         response = await self.request_data(target_page)
         soup = BeautifulSoup(response.content, features="html.parser")
 
@@ -156,28 +165,37 @@ class RatingScraper(BaseModel):
 class MovieScraper(BaseModel):
     movie_page_url: str
 
-    async def get_data_incremental(self) -> list[MovieIn]:
-        existing_movies = await fetch_movies_from_db()
-        existing_movie_titles = {movie.title for movie in existing_movies}
-
-        n_page = 1
-        while True:
-            target_page = os.path.join(self.movie_page_url, str(n_page))
-            resp = await self.request_data(target_page)
-            soup = BeautifulSoup(resp, features="html.parser")
-            try:
-                new_movies = await self.scrape_movies(soup, existing_movie_titles)
-            except Exception as e:
-                logger.error(f"Error while scraping page {n_page}: {e}")
-                break
-            if new_movies:
-                logger.info(f"Fetched {len(new_movies)} new movies from page {n_page}.")
-                return new_movies
-            logger.info(f"No new movies found on page {n_page}. Scraping next page...")
-            n_page += 1
+    async def get_data_incremental(
+        self, existing_movie_titles: list[str]
+    ) -> list[MovieIn]:
+        async with async_playwright() as p:
+            browser = await p.firefox.launch(headless=True)
+            n_page = 1
+            while True:
+                target_page = os.path.join(self.movie_page_url, str(n_page))
+                resp = await self.request_data(browser, target_page)
+                soup = BeautifulSoup(resp, features="html.parser")
+                try:
+                    new_movies = await self.scrape_movies(
+                        browser, soup, existing_movie_titles
+                    )
+                except Exception as e:
+                    logger.error(f"Error while scraping page {n_page}: {e}")
+                    break
+                if new_movies:
+                    logger.info(
+                        f"Fetched {len(new_movies)} new movies from page {n_page}."
+                    )
+                    await browser.close()
+                    return new_movies
+                logger.info(
+                    f"No new movies found on page {n_page}. Scraping next page..."
+                )
+                n_page += 1
+            await browser.close()
 
     async def scrape_movies(
-        self, soup: BeautifulSoup, existing_movie_titles: set[str]
+        self, browser: Browser, soup: BeautifulSoup, existing_movie_titles: list[str]
     ) -> list[MovieIn]:
         movies = []
         movie_containers = soup.find_all("div", class_="poster film-poster")
@@ -194,7 +212,7 @@ class MovieScraper(BaseModel):
             release_year = int(release_year.strip("()"))
 
             movie_link = urljoin("https://letterboxd.com", movie_information["href"])
-            resp = await self.request_data(movie_link)
+            resp = await self.request_data(browser, movie_link)
             logger.info("Processing response...")
             movie_soup = BeautifulSoup(resp, features="html.parser")
             try:
@@ -219,7 +237,7 @@ class MovieScraper(BaseModel):
                 )
                 genres = [genre.text for genre in genres]
             except Exception as e:
-                logger.error(f"Error while scraping movie details for '{title}': {e}")
+                logger.info(f"Error while scraping movie details for '{title}': {e}")
                 continue
 
             movies.append(
@@ -235,11 +253,11 @@ class MovieScraper(BaseModel):
         return movies
 
     @staticmethod
-    async def request_data(url: str) -> str:
-        async with async_playwright() as p:
-            browser = await p.chromium.launch(headless=True)
-            page = await browser.new_page()
-            await page.goto(url, wait_until="networkidle")
-            html = await page.content()
-            await browser.close()
+    async def request_data(browser: Browser, url: str) -> str:
+        page = await browser.new_page()
+        await Stealth().apply_stealth_async(page)
+        await page.set_extra_http_headers(WebScraperSettings().HEADERS)
+        await page.goto(url, wait_until="networkidle", timeout=60000)
+        html = await page.content()
+        await page.close()
         return html
