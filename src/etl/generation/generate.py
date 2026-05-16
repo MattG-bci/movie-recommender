@@ -16,7 +16,9 @@ async def generate_usernames(username_page: str) -> list[UserIn]:
 
 async def generate_movies(movies_page: str) -> list[MovieIn]:
     movie_scraper = MovieScraper(movie_page_url=movies_page)
-    movies = await movie_scraper.get_data_incremental()
+    existing_movies = await fetch_movies_from_db()
+    existing_movies = [movie.title for movie in existing_movies]
+    movies = await movie_scraper.get_data_incremental(existing_movies)
     return movies
 
 
@@ -34,7 +36,7 @@ async def generate_movie_ratings(
 
     # Filter movie ratings of movies not recorded in the database
     filtered_ratings = list(
-        filter(lambda x: x.movie_name not in map_movie_titles_to_ids, movie_data)
+        filter(lambda x: x.movie_name in map_movie_titles_to_ids.keys(), movie_data)
     )
     logger.info(f"Filtered ratings: {len(movie_data)} -> {len(filtered_ratings)}")
     movie_data = [
