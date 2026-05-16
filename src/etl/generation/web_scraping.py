@@ -24,14 +24,14 @@ logger = logging.getLogger(__name__)
 
 
 class UserScraper(BaseModel):
-    username_page_url: str
+    base_url: str
 
     async def scrape_page_incremental(self) -> list[UserIn]:
         existing_usernames = await fetch_usernames_from_db()
         existing_usernames = [user.username for user in existing_usernames]
         page = 1
         while True:
-            username_url = os.path.join(self.username_page_url, "page", str(page))
+            username_url = os.path.join(self.base_url, "page", str(page))
             try:
                 fetched_usernames = self.get_usernames_for_page(username_url)
             except Exception as e:
