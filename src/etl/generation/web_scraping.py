@@ -223,7 +223,7 @@ class MovieScraper(BaseModel):
                     )[:5]
                 ]  # Only get first 5 actors
                 director = movie_soup.find("a", class_="contributor").text
-                country = movie_soup.find("div", id="tab-details").find_all(
+                country = movie_soup.find("div", id="tab-panel-details").find_all(
                     "div", class_="text-sluglist"
                 )
                 country = [row.find("a") for row in country]
@@ -231,7 +231,7 @@ class MovieScraper(BaseModel):
                     0
                 ].strip(" ")
                 genres = (
-                    movie_soup.find("div", id="tab-genres")
+                    movie_soup.find("div", id="tab-panel-genres")
                     .find_next("div", class_="text-sluglist capitalize")
                     .find_all("a")
                 )
