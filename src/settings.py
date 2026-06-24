@@ -37,3 +37,14 @@ class WebScraperSettings(BaseSettings):
         env_file=Path(__file__).parents[1] / ".env",
         extra="ignore",
     )
+
+
+class LLMSettings(BaseSettings):
+    API_KEY: str
+    MODEL: str = "claude-sonnet-4-6"
+
+    model_config = SettingsConfigDict(
+        env_prefix="ANTHROPIC_",
+        env_file=Path(__file__).parents[1] / ".env",
+        extra="ignore",
+    )
