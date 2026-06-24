@@ -12,3 +12,6 @@ revert-db:
 
 verify-db:
     cd sqitch && sqitch verify -d movie_recommender
+
+pipeline *ARGS:
+    python3 src/main.py {{ARGS}}
