@@ -1,0 +1,94 @@
+x-airflow-common: &airflow-common
+  build:
+    context: .
+    dockerfile: Dockerfile.airflow
+  environment: &airflow-common-env
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-db:5432/airflow
+    AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+    AIRFLOW__CORE__DAGS_FOLDER: /opt/airflow/dags
+    # App environment variables
+    DB_HOST: ${DB_HOST:-app-db}
+    DB_USER: ${DB_USER:-postgres}
+    DB_PASS: ${DB_PASS:-postgres}
+    DB_NAME: ${DB_NAME:-movie_recommender}
+    DB_PORT: ${DB_PORT:-5432}
+    SCRAPER_USERNAME_PAGE: ${SCRAPER_USERNAME_PAGE:-https://letterboxd.com/members/popular/this/week/}
+    SCRAPER_RATINGS_PAGE: ${SCRAPER_RATINGS_PAGE:-https://letterboxd.com/}
+    SCRAPER_MOVIES_PAGE: ${SCRAPER_MOVIES_PAGE:-https://letterboxd.com/films/popular/}
+  volumes:
+    - ./dags:/opt/airflow/dags
+  depends_on:
+    airflow-db:
+      condition: service_healthy
+    app-db:
+      condition: service_healthy
+
+services:
+  airflow-db:
+    image: postgres:16.3
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U airflow"]
+      interval: 5s
+      retries: 5
+    volumes:
+      - airflow-db-data:/var/lib/postgresql/data
+
+  app-db:
+    image: postgres:16.3
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASS:-postgres}
+      POSTGRES_DB: ${DB_NAME:-movie_recommender}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
+      interval: 5s
+      retries: 5
+    ports:
+      - "5432:5432"
+    volumes:
+      - app-db-data:/var/lib/postgresql/data
+
+  airflow-init:
+    <<: *airflow-common
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        airflow db migrate &&
+        airflow users create \
+          --username admin \
+          --password admin \
+          --firstname Admin \
+          --lastname User \
+          --role Admin \
+          --email admin@example.com || true
+    depends_on:
+      airflow-db:
+        condition: service_healthy
+
+  airflow-scheduler:
+    <<: *airflow-common
+    command: scheduler
+    restart: unless-stopped
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+
+  airflow-webserver:
+    <<: *airflow-common
+    command: webserver
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+
+volumes:
+  airflow-db-data:
+  app-db-data:

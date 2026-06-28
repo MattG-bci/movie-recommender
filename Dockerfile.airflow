@@ -1,0 +1,26 @@
+FROM apache/airflow:3.0.1-python3.12
+
+USER root
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    build-essential \
+    libpq-dev \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+USER airflow
+
+COPY --chown=airflow:root pyproject.toml poetry.lock /opt/airflow/project/
+
+RUN pip install --no-cache-dir poetry && \
+    cd /opt/airflow/project && \
+    poetry config virtualenvs.create false && \
+    poetry install --no-interaction --no-ansi --without dev,ml
+
+USER root
+RUN playwright install --with-deps chromium
+USER airflow
+
+COPY --chown=airflow:root src/ /opt/airflow/project/src/
+COPY --chown=airflow:root dags/ /opt/airflow/dags/
