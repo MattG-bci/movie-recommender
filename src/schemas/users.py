@@ -14,3 +14,12 @@ class User(UserIn):
     id: int
     created_at: datetime.datetime
     updated_at: datetime.datetime
+
+
+class UserProfile(BaseModel):
+    user_id: int
+    username: str
+    top_genres: list[str]
+    top_actors: list[str]
+    top_directors: list[str]
+    top_movies: list[str]

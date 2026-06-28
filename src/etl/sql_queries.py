@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from typing import Any, Callable, Coroutine
 
 from schemas.movie import MovieRatingIn, Movie, MovieRatingWithId
-from schemas.users import UserIn, User
+from schemas.users import UserIn, User, UserProfile
 from settings import DBSettings
 
 
@@ -100,6 +100,74 @@ async def fetch_movie_ratings_from_db_for_movie(
     query = f"SELECT id, user_id, movie_id, rating FROM movie_ratings WHERE movie_id = {movie_id} LIMIT {limit}"
     rows = await conn.fetch(query)
     return [MovieRatingWithId(**dict(row)) for row in rows]
+
+
+@inject_db_connection
+async def fetch_user_profile(
+    conn: asyncpg.Connection, user_id: int, top_k: int = 5
+) -> UserProfile:
+    query = f"""
+
+    WITH top_actors AS (
+        SELECT
+            UNNEST(mv.actors) AS actor,
+            AVG(mv_rat.rating) AS average_rating
+        FROM users u
+        JOIN movie_ratings mv_rat ON u.id = mv_rat.user_id
+        JOIN movies mv ON mv.id = mv_rat.movie_id
+        WHERE u.id = {user_id}
+        GROUP BY actor
+        ORDER BY average_rating DESC
+        LIMIT {top_k}
+    ),
+    top_genres AS (
+        SELECT
+            UNNEST(mv.genres) AS genre,
+            AVG(mv_rat.rating) AS average_rating
+        FROM users u
+        JOIN movie_ratings mv_rat ON u.id = mv_rat.user_id
+        JOIN movies mv ON mv.id = mv_rat.movie_id
+        WHERE u.id = {user_id}
+        GROUP BY genre
+        ORDER BY average_rating DESC
+        LIMIT {top_k}
+    ),
+    top_directors AS (
+        SELECT
+            mv.director,
+            AVG(mv_rat.rating) AS average_rating
+        FROM users u
+        JOIN movie_ratings mv_rat ON u.id = mv_rat.user_id
+        JOIN movies mv ON mv.id = mv_rat.movie_id
+        WHERE u.id = {user_id}
+        GROUP BY director
+        ORDER BY average_rating DESC
+        LIMIT {top_k}
+    ),
+    top_movies AS (
+        SELECT
+            u.id,
+            u.username,
+            mv.title,
+            mv_rat.rating
+        FROM users u
+        JOIN movie_ratings mv_rat ON u.id = mv_rat.user_id
+        JOIN movies mv ON mv.id = mv_rat.movie_id
+        WHERE u.id = {user_id}
+        ORDER BY mv_rat.rating DESC
+        LIMIT {top_k}
+    )
+    SELECT
+        (SELECT UNNEST(ARRAY_AGG(distinct id)) from top_movies) as user_id,
+	    (SELECT UNNEST(ARRAY_AGG(distinct username)) from top_movies) as username,
+        (SELECT ARRAY_AGG(actor ORDER BY average_rating DESC) FROM top_actors) AS top_actors,
+        (SELECT ARRAY_AGG(director ORDER BY average_rating DESC) FROM top_directors) AS top_directors,
+        (SELECT ARRAY_AGG(genre ORDER BY average_rating DESC) FROM top_genres) AS top_genres,
+        (SELECT ARRAY_AGG(title ORDER BY rating DESC) FROM top_movies) AS top_movies;
+    """
+
+    row = await conn.fetch(query)
+    return UserProfile(**dict(row[0]))
 
 
 @inject_db_connection
