@@ -181,13 +181,10 @@ async def upsert_to_db(
         logging.info("No data to upsert.")
         return
 
-    # Get column names
     column_names = list(data_to_upsert[0].model_dump().keys())
 
-    # Create the correct number of placeholders
     placeholders = ", ".join(f"${i + 1}" for i in range(len(column_names)))
 
-    # Create SET clause for updates
     set_clause = ", ".join(
         f"{col} = excluded.{col}" for col in column_names if col not in conflict_columns
     )
