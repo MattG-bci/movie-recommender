@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 from typing import Any, Callable, Coroutine
 
+
 from schemas.movie import MovieRatingIn, Movie, MovieRatingWithId
 from schemas.users import UserIn, User
 from schemas.recommendation import UserProfile
@@ -168,6 +169,12 @@ async def fetch_user_profile(
     """
 
     row = await conn.fetch(query, user_id, top_k)
+    values = dict(row[0])
+    missing = [key for key, value in values.items() if value is None]
+    if len(missing) > 0:
+        raise ValueError(
+            f"Profile for user_id={user_id} has null fields: {" ".join(missing)}"
+        )
     return UserProfile(**dict(row[0]))
 
 
