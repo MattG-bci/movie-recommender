@@ -175,7 +175,7 @@ async def fetch_user_profile(
         raise ValueError(
             f"Profile for user_id={user_id} has null fields: {" ".join(missing)}"
         )
-    return UserProfile(**dict(row[0]))
+    return UserProfile(**values)
 
 
 @inject_db_connection
