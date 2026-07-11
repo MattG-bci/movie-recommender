@@ -168,14 +168,13 @@ async def fetch_user_profile(
         (SELECT ARRAY_AGG(title ORDER BY rating DESC) FROM top_movies) AS top_movies;
     """
 
-    row = await conn.fetch(query, user_id, top_k)
-    values = dict(row[0])
-    missing = [key for key, value in values.items() if value is None]
+    row = await conn.fetchrow(query, user_id, top_k)
+    missing = [key for key, value in row.items() if value is None]
     if len(missing) > 0:
         raise ValueError(
             f"Profile for user_id={user_id} has null fields: {" ".join(missing)}"
         )
-    return UserProfile(**values)
+    return UserProfile(**row)
 
 
 @inject_db_connection
