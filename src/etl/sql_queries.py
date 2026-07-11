@@ -98,8 +98,8 @@ async def fetch_movie_ratings_from_db_for_movie(
     movie_id: int,
     limit: int,
 ) -> list[MovieRatingWithId]:
-    query = f"SELECT id, user_id, movie_id, rating FROM movie_ratings WHERE movie_id = {movie_id} LIMIT {limit}"
-    rows = await conn.fetch(query)
+    query = "SELECT id, user_id, movie_id, rating FROM movie_ratings WHERE movie_id = $1 LIMIT $2"
+    rows = await conn.fetch(query, movie_id, limit)
     return [MovieRatingWithId(**dict(row)) for row in rows]
 
 
@@ -107,7 +107,7 @@ async def fetch_movie_ratings_from_db_for_movie(
 async def fetch_user_profile(
     conn: asyncpg.Connection, user_id: int, top_k: int = 5
 ) -> UserProfile:
-    query = f"""
+    query = """
 
     WITH top_actors AS (
         SELECT
@@ -116,10 +116,10 @@ async def fetch_user_profile(
         FROM users u
         JOIN movie_ratings mv_rat ON u.id = mv_rat.user_id
         JOIN movies mv ON mv.id = mv_rat.movie_id
-        WHERE u.id = {user_id}
+        WHERE u.id = $1
         GROUP BY actor
         ORDER BY average_rating DESC
-        LIMIT {top_k}
+        LIMIT $2
     ),
     top_genres AS (
         SELECT
@@ -128,10 +128,10 @@ async def fetch_user_profile(
         FROM users u
         JOIN movie_ratings mv_rat ON u.id = mv_rat.user_id
         JOIN movies mv ON mv.id = mv_rat.movie_id
-        WHERE u.id = {user_id}
+        WHERE u.id = $1
         GROUP BY genre
         ORDER BY average_rating DESC
-        LIMIT {top_k}
+        LIMIT $2
     ),
     top_directors AS (
         SELECT
@@ -140,10 +140,10 @@ async def fetch_user_profile(
         FROM users u
         JOIN movie_ratings mv_rat ON u.id = mv_rat.user_id
         JOIN movies mv ON mv.id = mv_rat.movie_id
-        WHERE u.id = {user_id}
+        WHERE u.id = $1
         GROUP BY director
         ORDER BY average_rating DESC
-        LIMIT {top_k}
+        LIMIT $2
     ),
     top_movies AS (
         SELECT
@@ -154,9 +154,9 @@ async def fetch_user_profile(
         FROM users u
         JOIN movie_ratings mv_rat ON u.id = mv_rat.user_id
         JOIN movies mv ON mv.id = mv_rat.movie_id
-        WHERE u.id = {user_id}
+        WHERE u.id = $1
         ORDER BY mv_rat.rating DESC
-        LIMIT {top_k}
+        LIMIT $2
     )
     SELECT
         (SELECT UNNEST(ARRAY_AGG(distinct id)) from top_movies) as user_id,
@@ -167,7 +167,7 @@ async def fetch_user_profile(
         (SELECT ARRAY_AGG(title ORDER BY rating DESC) FROM top_movies) AS top_movies;
     """
 
-    row = await conn.fetch(query)
+    row = await conn.fetch(query, user_id, top_k)
     return UserProfile(**dict(row[0]))
 
 

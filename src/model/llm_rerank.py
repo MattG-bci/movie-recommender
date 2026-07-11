@@ -36,7 +36,7 @@ def build_prompt(prompt: str, user_profile: UserProfile, exploration: float) -> 
     """
     user_taste_fields = {
         key: value
-        for key, value in user_profile.model_dump()
+        for key, value in user_profile.model_dump().items()
         if key in UserProfileWithID.model_fields
     }
     enhanced_prompt = prompt + enhanced_prompt.format(
