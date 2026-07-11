@@ -14,12 +14,15 @@ class RecommendationOut(BaseModel):
 
 
 class UserProfile(BaseModel):
-    user_id: int
-    username: str
     top_genres: list[str]
     top_actors: list[str]
     top_directors: list[str]
     top_movies: list[str]
+
+
+class UserProfileWithID(UserProfile):
+    user_id: int
+    username: str
 
 
 class MovieCandidate(BaseModel):

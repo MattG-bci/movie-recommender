@@ -2,26 +2,26 @@ from anthropic import Anthropic
 
 from etl.sql_queries import fetch_user_profile
 from settings import LLMSettings
-from schemas.recommendation import RecommendationOut, UserProfile
+from schemas.recommendation import RecommendationOut, UserProfile, UserProfileWithID
 
 
-def rerank(
+async def rerank(
     user_id: int, prompt: str, exploration: float, k: int = 10
 ) -> list[RecommendationOut]:
-    user_profile = fetch_user_profile(user_id, top_k=k)
-    updated_prompt = update_prompt(prompt, user_profile, exploration)
+    user_profile = await fetch_user_profile(user_id, top_k=k)
+    updated_prompt = build_prompt(prompt, user_profile, exploration)
     raw_llm_output = call_llm(updated_prompt)
     return raw_llm_output
 
 
-def update_prompt(prompt: str, user_profile: UserProfile, exploration: float) -> str:
-    enhancement = f"""
+def build_prompt(prompt: str, user_profile: UserProfile, exploration: float) -> str:
+    enhanced_prompt = """
 
     This part is to enhance the original prompt message requesting a movie recommendation.
 
     The user's movie taste is represented by the following user profile:
 
-    {user_profile.model_dump()}
+    {user_taste_profile}
 
     Consider this as a general idea of what user likes the most.
 
@@ -34,7 +34,15 @@ def update_prompt(prompt: str, user_profile: UserProfile, exploration: float) ->
     novelty and sticking to the original taste.
 
     """
-    return prompt + enhancement
+    user_taste_fields = {
+        key: value
+        for key, value in user_profile.model_dump()
+        if key in UserProfileWithID.model_fields
+    }
+    enhanced_prompt = prompt + enhanced_prompt.format(
+        user_taste_profile=user_taste_fields, exploration=exploration
+    )
+    return enhanced_prompt
 
 
 def call_llm(prompt: str) -> str:
