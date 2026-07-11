@@ -11,4 +11,17 @@ class RecommendationPrompt(BaseModel):
 class RecommendationOut(BaseModel):
     movie: Movie
     reason: str | None
-    source: str
+
+
+class UserProfile(BaseModel):
+    user_id: int
+    username: str
+    top_genres: list[str]
+    top_actors: list[str]
+    top_directors: list[str]
+    top_movies: list[str]
+
+
+class MovieCandidate(BaseModel):
+    movie: Movie
+    cf_score: float

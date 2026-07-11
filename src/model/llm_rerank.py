@@ -1,9 +1,8 @@
 from anthropic import Anthropic
 
 from etl.sql_queries import fetch_user_profile
-from schemas.users import UserProfile
 from settings import LLMSettings
-from schemas.recommendation import RecommendationOut
+from schemas.recommendation import RecommendationOut, UserProfile
 
 
 def rerank(

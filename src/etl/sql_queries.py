@@ -6,7 +6,8 @@ from pydantic import BaseModel
 from typing import Any, Callable, Coroutine
 
 from schemas.movie import MovieRatingIn, Movie, MovieRatingWithId
-from schemas.users import UserIn, User, UserProfile
+from schemas.users import UserIn, User
+from schemas.recommendation import UserProfile
 from settings import DBSettings
 
 
