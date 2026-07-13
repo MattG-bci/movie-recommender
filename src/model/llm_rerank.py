@@ -1,4 +1,4 @@
-from anthropic import Anthropic
+import dspy
 
 from etl.sql_queries import fetch_user_profile
 from settings import LLMSettings
@@ -10,8 +10,8 @@ async def rerank(
 ) -> list[RecommendationOut]:
     user_profile = await fetch_user_profile(user_id, top_k=k)
     updated_prompt = build_prompt(prompt, user_profile, exploration)
-    raw_llm_output = call_llm(updated_prompt)
-    return raw_llm_output
+    raw_llm_output = ""  # call_llm(updated_prompt)
+    return raw_llm_output + updated_prompt
 
 
 def build_prompt(prompt: str, user_profile: UserProfile, exploration: float) -> str:
@@ -45,17 +45,9 @@ def build_prompt(prompt: str, user_profile: UserProfile, exploration: float) -> 
     return enhanced_prompt
 
 
-def call_llm(prompt: str) -> str:
+def configure_llm() -> None:
     settings = LLMSettings()
-    model = Anthropic(api_key=settings.API_KEY)
-    out = model.messages.create(
-        max_tokens=1024,
-        messages=[
-            {
-                "role": "user",
-                "content": prompt,
-            }
-        ],
-        model=settings.MODEL,
+    lm = dspy.LM(
+        f"anthropic/{settings.MODEL}", api_key=settings.API_KEY, max_tokens=1024
     )
-    return out.content[0].text
+    dspy.configure(lm=lm)
