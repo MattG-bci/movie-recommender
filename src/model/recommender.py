@@ -54,7 +54,7 @@ class CFRecommender(nn.Module):
         user_vecs = self.dropout(self.user_embedding(user_ids))
         movie_vecs = self.dropout(self.movie_embedding(movie_ids))
 
-        out = torch.concat([user_vecs, movie_vecs], dim=1)
+        out = torch.concat([user_vecs, movie_vecs], dim=-1)
         preds = self.head(out)
 
         preds = preds + self.user_bias(user_ids) + self.movie_bias(movie_ids)
@@ -68,10 +68,11 @@ class CFRecommender(nn.Module):
 
     def get_top_k_recommendations(
         self, user_id: torch.Tensor, movie_ids: torch.Tensor, k: int = 5
-    ) -> torch.Tensor:
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        user_id = user_id.expand_as(movie_ids)
         preds = self.predict(user_id, movie_ids)
-        top_recommendations = torch.topk(preds, k).indices.detach()
-        return top_recommendations
+        top_recommendations = torch.topk(preds, k)
+        return top_recommendations.indices.detach(), top_recommendations.values.detach()
 
     @property
     def optimiser(self) -> torch.optim.Optimizer:

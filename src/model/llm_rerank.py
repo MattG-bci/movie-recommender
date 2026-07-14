@@ -29,6 +29,7 @@ async def rerank(
     ]
     by_id = {c.movie.id: c for c in candidates}
 
+    configure_llm()
     prediction = reranker(
         request=prompt,
         exploration=exploration,
