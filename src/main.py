@@ -15,7 +15,7 @@ from model.dataloader import construct_datasets
 from model.train import train_movie_recommender, get_device, preprocess_movie_ratings
 from model.recommender import (
     prepare_model_config,
-    Recommender,
+    CFRecommender,
     get_model_id_to_recommender_id_mapping,
 )
 from schemas.modelling import TrainConfig, ModelConfig, PATH_TO_MODEL_WEIGHTS
@@ -71,7 +71,7 @@ async def train_recommender() -> None:
     device = get_device()
 
     model_config = prepare_model_config(movies, user_names)
-    model = Recommender(model_config)
+    model = CFRecommender(model_config)
     processed_ratings = preprocess_movie_ratings(ratings, movies, user_names)
     train_dataset, val_dataset = construct_datasets(processed_ratings)
     train_config = TrainConfig(
@@ -114,7 +114,7 @@ async def recommend_movies(user_name: str, top_k: int = 5):
 
     model_config = ModelConfig(n_users=n_users, n_movies=n_movies)
     state_dict = torch.load(PATH_TO_MODEL_WEIGHTS, map_location=torch.device("cpu"))
-    model = Recommender(model_config)
+    model = CFRecommender(model_config)
     model.load_state_dict(state_dict)
     user_id = torch.tensor(user_id).to(torch.device("cpu"))
     movie_ids = torch.tensor(movie_ids).to(torch.device("cpu"))

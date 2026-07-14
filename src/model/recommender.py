@@ -1,3 +1,4 @@
+import dspy
 import torch
 from pydantic import BaseModel
 from torch import nn
@@ -5,12 +6,27 @@ import logging
 
 from schemas.modelling import ModelConfig
 from schemas.movie import Movie
+from schemas.recommendation import RerankMovies
 from schemas.users import User
 
 logger = logging.getLogger(__name__)
 
 
-class Recommender(nn.Module):
+class MovieReranker(dspy.Module):
+    def __init__(self):
+        super().__init__()
+        self.rerank = dspy.ChainOfThought(RerankMovies)
+
+    def forward(self, request, exploration, user_profile, candidates):
+        return self.rerank(
+            request=request,
+            exploration=exploration,
+            user_profile=user_profile,
+            candidates=candidates,
+        )
+
+
+class CFRecommender(nn.Module):
     def __init__(self, config: ModelConfig) -> None:
         super().__init__()
         self.config = config
