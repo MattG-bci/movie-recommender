@@ -110,9 +110,6 @@ async def recommend_movies(user_name: str, top_k: int = 5, exploration: float = 
     map_user_name_to_id = {
         user.username: map_user_id_to_recommender_id[user.id] for user in user_names
     }
-    map_movie_id_to_name = {
-        map_movie_id_to_recommender_id[movie.id]: movie.title for movie in movies
-    }
 
     movie_ids = list({map_movie_id_to_recommender_id[movie.id] for movie in movies})
     n_movies = len(movie_ids)
@@ -129,18 +126,13 @@ async def recommend_movies(user_name: str, top_k: int = 5, exploration: float = 
     user_id = torch.tensor([user_id]).to(torch.device("cpu"))
     movie_ids = torch.tensor(movie_ids).to(torch.device("cpu"))
     recommendations, cf_scores = model.get_top_k_recommendations(
-        user_id, movie_ids, top_k
+        user_id, movie_ids, k=40
     )
 
     recommended_movie_ids = [
         map_recommender_id_to_movie_id.get(int(recommended_movie_id))
         for recommended_movie_id in recommendations
     ]
-
-    movie_names = [
-        map_movie_id_to_name.get(movie_id) for movie_id in recommended_movie_ids
-    ]
-    logger.info(f"Here is top-{top_k} recommended movies: {movie_names}")
 
     logger.info("Reranking...")
     candidates: list[MovieCandidate] = []
@@ -153,10 +145,10 @@ async def recommend_movies(user_name: str, top_k: int = 5, exploration: float = 
 
     prompt = "I want something relaxing"
     reranked_recommendations = await rerank(
-        int(user_id.detach()), prompt, exploration, candidates=candidates
+        int(user_id.detach()), prompt, exploration, candidates=candidates, k=top_k
     )
     logger.info(
-        f"Here is top movie recommendations after reranking: {reranked_recommendations}"
+        f"Here is top {top_k} movie recommendations after reranking: {reranked_recommendations}"
     )
 
 

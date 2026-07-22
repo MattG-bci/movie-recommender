@@ -59,7 +59,5 @@ async def rerank(
 
 def configure_llm() -> None:
     settings = LLMSettings()
-    lm = dspy.LM(
-        f"anthropic/{settings.MODEL}", api_key=settings.API_KEY, max_tokens=1024
-    )
+    lm = dspy.LM(f"anthropic/{settings.MODEL}", api_key=settings.API_KEY)
     dspy.configure(lm=lm)
