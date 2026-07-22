@@ -69,10 +69,13 @@ class CFRecommender(nn.Module):
     def get_top_k_recommendations(
         self, user_id: torch.Tensor, movie_ids: torch.Tensor, k: int = 5
     ) -> tuple[torch.Tensor, torch.Tensor]:
-        user_id = user_id.expand_as(movie_ids)
-        preds = self.predict(user_id, movie_ids)
-        top_recommendations = torch.topk(preds, k)
-        return top_recommendations.indices.detach(), top_recommendations.values.detach()
+        self.eval()
+        with torch.no_grad():
+            user_ids = user_id.expand_as(movie_ids)
+            preds = self.predict(user_ids, movie_ids)
+        top = torch.topk(preds, k)
+        top_movie_ids = movie_ids[top.indices.detach()]
+        return top_movie_ids, top.values.detach()
 
     @property
     def optimiser(self) -> torch.optim.Optimizer:

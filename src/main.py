@@ -103,6 +103,10 @@ async def recommend_movies(user_name: str, top_k: int = 5, exploration: float = 
     map_user_id_to_recommender_id = get_model_id_to_recommender_id_mapping(
         user_names, "id"
     )
+    map_recommender_id_to_movie_id = {
+        value: key for key, value in map_movie_id_to_recommender_id.items()
+    }
+
     map_user_name_to_id = {
         user.username: map_user_id_to_recommender_id[user.id] for user in user_names
     }
@@ -128,15 +132,19 @@ async def recommend_movies(user_name: str, top_k: int = 5, exploration: float = 
         user_id, movie_ids, top_k
     )
 
-    movie_names = [
-        map_movie_id_to_name.get(int(recommended_movie_id))
+    recommended_movie_ids = [
+        map_recommender_id_to_movie_id.get(int(recommended_movie_id))
         for recommended_movie_id in recommendations
+    ]
+
+    movie_names = [
+        map_movie_id_to_name.get(movie_id) for movie_id in recommended_movie_ids
     ]
     logger.info(f"Here is top-{top_k} recommended movies: {movie_names}")
 
     logger.info("Reranking...")
     candidates: list[MovieCandidate] = []
-    for recommended_movie_id, score in zip(recommendations, cf_scores):
+    for recommended_movie_id, score in zip(recommended_movie_ids, cf_scores):
         movie = list(filter(lambda x: x.id == recommended_movie_id, movies))
         if not movie:
             continue
