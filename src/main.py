@@ -93,7 +93,9 @@ async def train_recommender() -> None:
 
 @app.command()
 @async_typer_command
-async def recommend_movies(user_name: str, top_k: int = 5, exploration: float = 1.0):
+async def recommend_movies(
+    user_name: str, top_k: int = 10, exploration: float = 1.0, n_cf_candidates: int = 40
+):
     movies = await fetch_movies_from_db()
     user_names = await fetch_usernames_from_db()
 
@@ -107,26 +109,25 @@ async def recommend_movies(user_name: str, top_k: int = 5, exploration: float = 
         value: key for key, value in map_movie_id_to_recommender_id.items()
     }
 
-    map_user_name_to_id = {
-        user.username: map_user_id_to_recommender_id[user.id] for user in user_names
-    }
+    map_user_name_to_db_id = {user.username: user.id for user in user_names}
 
     movie_ids = list({map_movie_id_to_recommender_id[movie.id] for movie in movies})
     n_movies = len(movie_ids)
     n_users = len({user.id for user in user_names})
 
-    user_id = map_user_name_to_id.get(user_name)
-    if user_id is None:
+    database_user_id = map_user_name_to_db_id.get(user_name)
+    if database_user_id is None:
         raise KeyError(f"User name {user_name} does not exist in the database")
+    recommender_user_id = map_user_id_to_recommender_id[database_user_id]
 
     model_config = ModelConfig(n_users=n_users, n_movies=n_movies)
     state_dict = torch.load(PATH_TO_MODEL_WEIGHTS, map_location=torch.device("cpu"))
     model = CFRecommender(model_config)
     model.load_state_dict(state_dict)
-    user_id = torch.tensor([user_id]).to(torch.device("cpu"))
+    user_id_tensor = torch.tensor([recommender_user_id]).to(torch.device("cpu"))
     movie_ids = torch.tensor(movie_ids).to(torch.device("cpu"))
     recommendations, cf_scores = model.get_top_k_recommendations(
-        user_id, movie_ids, k=40
+        user_id_tensor, movie_ids, k=n_cf_candidates
     )
 
     recommended_movie_ids = [
@@ -145,7 +146,7 @@ async def recommend_movies(user_name: str, top_k: int = 5, exploration: float = 
 
     prompt = "I want something relaxing"
     reranked_recommendations = await rerank(
-        int(user_id.detach()), prompt, exploration, candidates=candidates, k=top_k
+        database_user_id, prompt, exploration, candidates=candidates, k=top_k
     )
     logger.info(
         f"Here is top {top_k} movie recommendations after reranking: {reranked_recommendations}"
