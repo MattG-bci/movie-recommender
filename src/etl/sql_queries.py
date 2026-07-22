@@ -105,6 +105,16 @@ async def fetch_movie_ratings_from_db_for_movie(
 
 
 @inject_db_connection
+async def fetch_movie_ratings_for_user(
+    conn: asyncpg.Connection,
+    user_id: int,
+) -> list[MovieRatingWithId]:
+    query = "SELECT id, user_id, movie_id, rating FROM movie_ratings WHERE user_id = $1"
+    rows = await conn.fetch(query, user_id)
+    return [MovieRatingWithId(**dict(row)) for row in rows]
+
+
+@inject_db_connection
 async def fetch_user_profile(
     conn: asyncpg.Connection, user_id: int, top_k: int = 5
 ) -> UserProfile:

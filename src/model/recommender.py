@@ -1,3 +1,4 @@
+import dspy
 import torch
 from pydantic import BaseModel
 from torch import nn
@@ -5,12 +6,27 @@ import logging
 
 from schemas.modelling import ModelConfig
 from schemas.movie import Movie
+from schemas.recommendation import RerankMovies
 from schemas.users import User
 
 logger = logging.getLogger(__name__)
 
 
-class Recommender(nn.Module):
+class MovieReranker(dspy.Module):
+    def __init__(self):
+        super().__init__()
+        self.rerank = dspy.ChainOfThought(RerankMovies)
+
+    def forward(self, request, exploration, user_profile, candidates):
+        return self.rerank(
+            request=request,
+            exploration=exploration,
+            user_profile=user_profile,
+            candidates=candidates,
+        )
+
+
+class CFRecommender(nn.Module):
     def __init__(self, config: ModelConfig) -> None:
         super().__init__()
         self.config = config
@@ -38,7 +54,7 @@ class Recommender(nn.Module):
         user_vecs = self.dropout(self.user_embedding(user_ids))
         movie_vecs = self.dropout(self.movie_embedding(movie_ids))
 
-        out = torch.concat([user_vecs, movie_vecs], dim=1)
+        out = torch.concat([user_vecs, movie_vecs], dim=-1)
         preds = self.head(out)
 
         preds = preds + self.user_bias(user_ids) + self.movie_bias(movie_ids)
@@ -52,10 +68,14 @@ class Recommender(nn.Module):
 
     def get_top_k_recommendations(
         self, user_id: torch.Tensor, movie_ids: torch.Tensor, k: int = 5
-    ) -> torch.Tensor:
-        preds = self.predict(user_id, movie_ids)
-        top_recommendations = torch.topk(preds, k).indices.detach()
-        return top_recommendations
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        self.eval()
+        with torch.no_grad():
+            user_ids = user_id.expand_as(movie_ids)
+            preds = self.predict(user_ids, movie_ids)
+        top = torch.topk(preds, k)
+        top_movie_ids = movie_ids[top.indices.detach()]
+        return top_movie_ids, top.values.detach()
 
     @property
     def optimiser(self) -> torch.optim.Optimizer:
