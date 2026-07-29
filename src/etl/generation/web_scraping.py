@@ -211,7 +211,9 @@ class MovieScraper(BaseModel):
             release_year = data[-1]
             release_year = int(release_year.strip("()"))
 
-            movie_link = urljoin("https://letterboxd.com", movie_information["href"])
+            movie_link = urljoin(
+                WebScraperSettings().BASE_URL, movie_information["href"]
+            )
             resp = await self.request_data(browser, movie_link)
             logger.info("Processing response...")
             movie_soup = BeautifulSoup(resp, features="html.parser")
