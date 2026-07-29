@@ -20,6 +20,7 @@ class DBSettings(BaseSettings):
 
 
 class WebScraperSettings(BaseSettings):
+    BASE_URL: str = "https://letterboxd.com"
     USERNAME_PAGE: str
     RATINGS_PAGE: str
     MOVIES_PAGE: str

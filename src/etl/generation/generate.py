@@ -10,7 +10,8 @@ logger = logging.getLogger(__name__)
 
 async def generate_usernames(username_page: str) -> list[UserIn]:
     usr_scraper = UserScraper(username_page_url=username_page)
-    usernames = await usr_scraper.scrape_page_incremental()
+    existing_usernames = await fetch_usernames_from_db()
+    usernames = await usr_scraper.scrape_page_incremental(existing_usernames)
     return usernames
 
 

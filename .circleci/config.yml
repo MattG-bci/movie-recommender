@@ -25,6 +25,10 @@ jobs:
       - run:
           name: "Install Linting"
           command: curl -LsSf https://astral.sh/ruff/install.sh | sh
+      # Run playwright installation here to make it work in CI/CD
+      - run:
+          name: "Install Playwright"
+          command: poetry run playwright install
       - run:
             name: "Linting"
             command: |
