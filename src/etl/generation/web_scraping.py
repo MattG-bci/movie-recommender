@@ -19,7 +19,6 @@ from playwright.async_api import async_playwright
 import os
 import itertools
 
-from etl.sql_queries import fetch_usernames_from_db
 from schemas.movie import MovieIn, MovieRating
 from schemas.users import UserIn, User
 from settings import WebScraperSettings
@@ -31,8 +30,9 @@ logger = logging.getLogger(__name__)
 class UserScraper(BaseModel):
     username_page_url: str
 
-    async def scrape_page_incremental(self) -> list[UserIn]:
-        existing_usernames = await fetch_usernames_from_db()
+    async def scrape_page_incremental(
+        self, existing_usernames: list[User]
+    ) -> list[UserIn]:
         existing_usernames = [user.username for user in existing_usernames]
         page = 1
         while True:
