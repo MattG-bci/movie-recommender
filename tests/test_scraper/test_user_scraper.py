@@ -3,64 +3,57 @@ from unittest.mock import patch, AsyncMock
 import pytest
 
 from etl.generation.web_scraping import UserScraper
+from schemas.users import User
+from datetime import datetime
 
 
-class TestUserScraper:
-    def test_get_usernames_for_page(self, fake_site_url):
-        scraper = UserScraper(
-            username_page_url=f"{fake_site_url}/members/popular/this/week/"
-        )
-        url = f"{fake_site_url}/members/popular/this/week/page/1"
-        usernames = scraper.get_usernames_for_page(url)
-
-        assert len(usernames) == 3
-        assert "testuser1" in usernames
-        assert "testuser2" in usernames
-        assert "testuser3" in usernames
-
-    @pytest.mark.asyncio
-    @patch(
-        "etl.generation.web_scraping.fetch_usernames_from_db", new_callable=AsyncMock
+def test_get_usernames_for_page(fake_site_url):
+    scraper = UserScraper(
+        username_page_url=f"{fake_site_url}/members/popular/this/week/"
     )
-    async def test_scrape_page_incremental(self, mock_fetch_db, fake_site_url):
-        mock_fetch_db.return_value = []
+    url = f"{fake_site_url}/members/popular/this/week/page/1"
+    usernames = scraper.get_usernames_for_page(url)
 
-        scraper = UserScraper(
-            username_page_url=f"{fake_site_url}/members/popular/this/week/"
-        )
-        users = await scraper.scrape_page_incremental()
+    assert len(usernames) == 3
+    assert "testuser1" in usernames
+    assert "testuser2" in usernames
+    assert "testuser3" in usernames
 
-        assert users is not None
-        assert len(users) == 3
-        assert {u.username for u in users} == {"testuser1", "testuser2", "testuser3"}
 
-    @pytest.mark.asyncio
-    @patch(
-        "etl.generation.web_scraping.fetch_usernames_from_db", new_callable=AsyncMock
+@pytest.mark.asyncio
+@patch("etl.generation.web_scraping.fetch_usernames_from_db", new_callable=AsyncMock)
+async def test_scrape_page_incremental(mock_fetch_db, fake_site_url):
+    mock_fetch_db.return_value = []
+
+    scraper = UserScraper(
+        username_page_url=f"{fake_site_url}/members/popular/this/week/"
     )
-    async def test_scrape_page_incremental_filters_existing(
-        self, mock_fetch_db, fake_site_url
-    ):
-        """Existing usernames in DB should be excluded from results."""
-        from schemas.users import User
-        from datetime import datetime
+    users = await scraper.scrape_page_incremental()
 
-        mock_fetch_db.return_value = [
-            User(
-                id=1,
-                username="testuser1",
-                created_at=datetime.now(),
-                updated_at=datetime.now(),
-            )
-        ]
+    assert users is not None
+    assert len(users) == 3
+    assert {u.username for u in users} == {"testuser1", "testuser2", "testuser3"}
 
-        scraper = UserScraper(
-            username_page_url=f"{fake_site_url}/members/popular/this/week/"
+
+@pytest.mark.asyncio
+@patch("etl.generation.web_scraping.fetch_usernames_from_db", new_callable=AsyncMock)
+async def test_scrape_page_incremental_filters_existing(mock_fetch_db, fake_site_url):
+    mock_fetch_db.return_value = [
+        User(
+            id=1,
+            username="testuser1",
+            created_at=datetime.now(),
+            updated_at=datetime.now(),
         )
-        users = await scraper.scrape_page_incremental()
+    ]
 
-        assert users is not None
-        usernames = {u.username for u in users}
-        assert "testuser1" not in usernames
-        assert "testuser2" in usernames
-        assert "testuser3" in usernames
+    scraper = UserScraper(
+        username_page_url=f"{fake_site_url}/members/popular/this/week/"
+    )
+    users = await scraper.scrape_page_incremental()
+
+    assert users is not None
+    usernames = {u.username for u in users}
+    assert "testuser1" not in usernames
+    assert "testuser2" in usernames
+    assert "testuser3" in usernames

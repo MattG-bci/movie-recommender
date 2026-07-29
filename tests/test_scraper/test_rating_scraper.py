@@ -15,70 +15,69 @@ def make_user(username: str, user_id: int = 1) -> User:
     )
 
 
-class TestRatingScraper:
-    @pytest.mark.asyncio
-    async def test_scrape_single_user(self, fake_site_url):
-        user = make_user("testuser1", user_id=1)
-        scraper = RatingScraper(usernames=[user])
+@pytest.mark.asyncio
+async def test_scrape_single_user(fake_site_url):
+    user = make_user("testuser1", user_id=1)
+    scraper = RatingScraper(usernames=[user])
 
-        ratings = await scraper.scrape_data()
+    ratings = await scraper.scrape_data()
 
-        assert len(ratings) == 3
-        titles = [r.movie_name for r in ratings]
-        assert "The Matrix" in titles
-        assert "Inception" in titles
-        assert "Pulp Fiction" in titles
+    assert len(ratings) == 3
+    titles = [r.movie_name for r in ratings]
+    assert "The Matrix" in titles
+    assert "Inception" in titles
+    assert "Pulp Fiction" in titles
 
-    @pytest.mark.asyncio
-    async def test_rating_values(self, fake_site_url):
-        user = make_user("testuser1", user_id=1)
-        scraper = RatingScraper(usernames=[user])
 
-        ratings = await scraper.scrape_data()
-        rating_map = {r.movie_name: r.rating for r in ratings}
+@pytest.mark.asyncio
+async def test_rating_values(fake_site_url):
+    user = make_user("testuser1", user_id=1)
+    scraper = RatingScraper(usernames=[user])
 
-        # 5 stars (★★★★★) → len=5, *2 = 10.0
-        assert rating_map["The Matrix"] == 10.0
-        # 4 stars (★★★★) → len=4, *2 = 8.0
-        assert rating_map["Inception"] == 8.0
-        # 3.5 stars (★★★½) → len=4 - 0.5 = 3.5, *2 = 7.0
-        assert rating_map["Pulp Fiction"] == 7.0
+    ratings = await scraper.scrape_data()
+    rating_map = {r.movie_name: r.rating for r in ratings}
 
-    @pytest.mark.asyncio
-    async def test_scrape_multiple_users(self, fake_site_url):
-        users = [
-            make_user("testuser1", user_id=1),
-            make_user("testuser2", user_id=2),
-        ]
-        scraper = RatingScraper(usernames=users)
+    assert rating_map["The Matrix"] == 10.0
+    assert rating_map["Inception"] == 8.0
+    assert rating_map["Pulp Fiction"] == 7.0
 
-        ratings = await scraper.scrape_data()
 
-        user1_ratings = [r for r in ratings if r.username == "testuser1"]
-        user2_ratings = [r for r in ratings if r.username == "testuser2"]
+@pytest.mark.asyncio
+async def test_scrape_multiple_users(fake_site_url):
+    users = [
+        make_user("testuser1", user_id=1),
+        make_user("testuser2", user_id=2),
+    ]
+    scraper = RatingScraper(usernames=users)
 
-        assert len(user1_ratings) == 3
-        # testuser2 has 3 items but one has no rating span → 2 rated
-        assert len(user2_ratings) == 2
+    ratings = await scraper.scrape_data()
 
-    @pytest.mark.asyncio
-    async def test_skips_unrated_movies(self, fake_site_url):
-        user = make_user("testuser2", user_id=2)
-        scraper = RatingScraper(usernames=[user])
+    user1_ratings = [r for r in ratings if r.username == "testuser1"]
+    user2_ratings = [r for r in ratings if r.username == "testuser2"]
 
-        ratings = await scraper.scrape_data()
-        titles = [r.movie_name for r in ratings]
+    assert len(user1_ratings) == 3
+    assert len(user2_ratings) == 2
 
-        assert "No Rating Movie" not in titles
 
-    def test_convert_rating(self):
-        assert RatingScraper.convert_rating("★★★★★") == 10.0
-        assert RatingScraper.convert_rating("★★★★") == 8.0
-        assert RatingScraper.convert_rating("★★★") == 6.0
-        assert RatingScraper.convert_rating("★★") == 4.0
-        assert RatingScraper.convert_rating("★") == 2.0
-        assert RatingScraper.convert_rating("★★★★½") == 9.0
-        assert RatingScraper.convert_rating("★★★½") == 7.0
-        assert RatingScraper.convert_rating("★★½") == 5.0
-        assert RatingScraper.convert_rating("★½") == 3.0
-        assert RatingScraper.convert_rating("½") == 1.0
+@pytest.mark.asyncio
+async def test_skips_unrated_movies(fake_site_url):
+    user = make_user("testuser2", user_id=2)
+    scraper = RatingScraper(usernames=[user])
+
+    ratings = await scraper.scrape_data()
+    titles = [r.movie_name for r in ratings]
+
+    assert "No Rating Movie" not in titles
+
+
+def test_convert_rating():
+    assert RatingScraper.convert_rating("★★★★★") == 10.0
+    assert RatingScraper.convert_rating("★★★★") == 8.0
+    assert RatingScraper.convert_rating("★★★") == 6.0
+    assert RatingScraper.convert_rating("★★") == 4.0
+    assert RatingScraper.convert_rating("★") == 2.0
+    assert RatingScraper.convert_rating("★★★★½") == 9.0
+    assert RatingScraper.convert_rating("★★★½") == 7.0
+    assert RatingScraper.convert_rating("★★½") == 5.0
+    assert RatingScraper.convert_rating("★½") == 3.0
+    assert RatingScraper.convert_rating("½") == 1.0

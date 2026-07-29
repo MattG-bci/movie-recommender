@@ -10,6 +10,7 @@ dependencies = [
     "pydantic>=2.11.7",
     "dspy>=3.2.1",
     "pydantic-settings>=2.8.1",
+    "playwright-stealth>=2.0.3",
 ]
 
 [tool.poetry]
@@ -37,6 +38,7 @@ pydantic-settings = "^2.8.1"
 playwright-stealth = "^2.0.3"
 anthropic = "^0.112.0"
 dspy = "^3.2.1"
+litellm = "1.83.0"
 
 [tool.poetry.group.ml.dependencies]
 torch = "^2.5.1"
