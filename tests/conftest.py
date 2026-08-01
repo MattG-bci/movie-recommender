@@ -113,7 +113,7 @@ async def create_db(settings: DBSettings):
 
 
 @pytest.fixture(scope="session")
-def db_service(docker_ip, docker_services):
+def db_service(docker_ip, docker_services) -> DBSettings:
     port = docker_services.port_for("test-db", 5432)
 
     docker_services.wait_until_responsive(
@@ -160,7 +160,7 @@ def mock_model_config() -> ModelConfig:
     )
 
 
-def setup_test_db(settings: DBSettings):
+def run_sqitch(settings: DBSettings, command: str):
     dsn = settings.get_postgres_dsn("db:pg")
     result = subprocess.run(
         [
@@ -172,7 +172,7 @@ def setup_test_db(settings: DBSettings):
             "-v",
             f"{SQITCH_PATH}:/repo",
             "sqitch/sqitch:latest",
-            "deploy",
+            command,
             "--target",
             dsn,
         ],
@@ -182,9 +182,13 @@ def setup_test_db(settings: DBSettings):
 
     if result.returncode != 0:
         raise RuntimeError(
-            f"Sqitch deployment failed for the test database: {result.returncode}\n"
+            f"Sqitch {command} failed for the test database: {result.returncode}\n"
             f"{result.stdout} \n---- {result.stderr}"
         )
+
+
+def setup_test_db(settings: DBSettings):
+    run_sqitch(settings, "deploy")
 
 
 def load_fixtures(settings: DBSettings):
