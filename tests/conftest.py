@@ -197,6 +197,7 @@ def run_sqitch(settings: DBSettings, command: str):
         ],
         capture_output=True,
         text=True,
+        timeout=30,
     )
 
     if result.returncode != 0:
