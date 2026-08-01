@@ -9,6 +9,7 @@ import logging
 import torch
 
 from etl.sql_queries import (
+    DatabaseConnector,
     fetch_movie_ratings_from_db,
     fetch_movies_from_db,
     fetch_usernames_from_db,
@@ -23,6 +24,7 @@ from model.recommender import (
 )
 from schemas.modelling import TrainConfig, ModelConfig, PATH_TO_MODEL_WEIGHTS
 from schemas.recommendation import MovieCandidate
+from settings import DBSettings
 
 logging.basicConfig(
     level=logging.INFO,
@@ -71,11 +73,12 @@ async def run_all_ingestion() -> None:
 @app.command()
 @async_typer_command
 async def train_recommender() -> None:
-    ratings = await fetch_movie_ratings_from_db()
-    movies = await fetch_movies_from_db()
-    user_names = await fetch_usernames_from_db()
-    device = get_device()
+    async with DatabaseConnector() as conn:
+        ratings = await fetch_movie_ratings_from_db(conn)
+        movies = await fetch_movies_from_db(conn)
+        user_names = await fetch_usernames_from_db(conn)
 
+    device = get_device()
     model_config = prepare_model_config(movies, user_names)
     model = CFRecommender(model_config)
     processed_ratings = preprocess_movie_ratings(ratings, movies, user_names)
@@ -96,8 +99,10 @@ async def train_recommender() -> None:
 async def recommend_movies(
     user_name: str, top_k: int = 10, exploration: float = 1.0, n_cf_candidates: int = 40
 ):
-    movies = await fetch_movies_from_db()
-    user_names = await fetch_usernames_from_db()
+    settings = DBSettings()
+    async with DatabaseConnector(db_settings=settings) as conn:
+        movies = await fetch_movies_from_db(conn)
+        user_names = await fetch_usernames_from_db(conn)
 
     map_movie_id_to_recommender_id = get_model_id_to_recommender_id_mapping(
         movies, "id"

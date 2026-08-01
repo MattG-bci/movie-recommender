@@ -1,10 +1,11 @@
 import logging
 
 import asyncpg
+import psycopg2
+from psycopg2.extensions import connection
 from pydantic import BaseModel
 
-from typing import Any, Callable, Coroutine
-
+from typing import Any
 
 from schemas.movie import MovieRatingIn, Movie, MovieRatingWithId
 from schemas.users import UserIn, User
@@ -13,18 +14,36 @@ from settings import DBSettings
 
 
 class DatabaseConnector(BaseModel):
-    connection: asyncpg.Connection = None
-    db_settings: DBSettings = DBSettings()
+    connection: asyncpg.Connection | connection | None = None
+    db_settings: DBSettings | None = None
 
     model_config = dict(arbitrary_types_allowed=True)
 
+    def _get_settings(self) -> DBSettings:
+        return self.db_settings or DBSettings()
+
+    def __enter__(self) -> connection:
+        settings = self._get_settings()
+        self.connection = psycopg2.connect(
+            host=settings.HOST,
+            user=settings.USER,
+            password=settings.PASS,
+            database=settings.NAME,
+            port=settings.PORT,
+        )
+        return self.connection
+
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+        self.connection.close()
+
     async def __aenter__(self) -> asyncpg.Connection:
+        settings = self._get_settings()
         self.connection = await asyncpg.connect(
-            host=self.db_settings.HOST,
-            user=self.db_settings.USER,
-            password=self.db_settings.PASS,
-            database=self.db_settings.NAME,
-            port=self.db_settings.PORT,
+            host=settings.HOST,
+            user=settings.USER,
+            password=settings.PASS,
+            database=settings.NAME,
+            port=settings.PORT,
         )
         return self.connection
 
@@ -32,16 +51,6 @@ class DatabaseConnector(BaseModel):
         await self.connection.close()
 
 
-def inject_db_connection(func) -> Callable:
-    async def inner_wrapper(*args, **kwargs) -> Coroutine:
-        async with DatabaseConnector() as conn:
-            res = await func(conn, *args, **kwargs)
-        return res
-
-    return inner_wrapper
-
-
-@inject_db_connection
 async def insert_usernames(conn: asyncpg.Connection, usernames: list[UserIn]) -> None:
     logging.info(f"Inserting {len(usernames)} usernames to the database...")
     if not usernames:
@@ -59,23 +68,24 @@ async def insert_usernames(conn: asyncpg.Connection, usernames: list[UserIn]) ->
     )
 
 
-async def upsert_movie_ratings(movie_ratings: list[MovieRatingIn]) -> None:
+async def upsert_movie_ratings(
+    conn: asyncpg.Connection, movie_ratings: list[MovieRatingIn]
+) -> None:
     logging.info(f"Upserting {len(movie_ratings)} movie ratings to the database...")
     await upsert_to_db(
+        conn,
         data_to_upsert=movie_ratings,
         table_name="movie_ratings",
         conflict_columns=["user_id", "movie_id"],
     )
 
 
-@inject_db_connection
 async def fetch_usernames_from_db(conn: asyncpg.Connection) -> list[User]:
     query = "SELECT * FROM users"
     rows = await conn.fetch(query)
     return [User(**dict(row)) for row in rows]
 
 
-@inject_db_connection
 async def fetch_movies_from_db(conn: asyncpg.Connection) -> list[Movie]:
     query = (
         "SELECT id, title, release_year, genres, director, country, actors FROM movies"
@@ -84,7 +94,6 @@ async def fetch_movies_from_db(conn: asyncpg.Connection) -> list[Movie]:
     return [Movie(**dict(row)) for row in rows]
 
 
-@inject_db_connection
 async def fetch_movie_ratings_from_db(
     conn: asyncpg.Connection,
 ) -> list[MovieRatingWithId]:
@@ -93,7 +102,6 @@ async def fetch_movie_ratings_from_db(
     return [MovieRatingWithId(**dict(row)) for row in rows]
 
 
-@inject_db_connection
 async def fetch_movie_ratings_from_db_for_movie(
     conn: asyncpg.Connection,
     movie_id: int,
@@ -104,17 +112,6 @@ async def fetch_movie_ratings_from_db_for_movie(
     return [MovieRatingWithId(**dict(row)) for row in rows]
 
 
-@inject_db_connection
-async def fetch_movie_ratings_for_user(
-    conn: asyncpg.Connection,
-    user_id: int,
-) -> list[MovieRatingWithId]:
-    query = "SELECT id, user_id, movie_id, rating FROM movie_ratings WHERE user_id = $1"
-    rows = await conn.fetch(query, user_id)
-    return [MovieRatingWithId(**dict(row)) for row in rows]
-
-
-@inject_db_connection
 async def fetch_user_profile(
     conn: asyncpg.Connection, user_id: int, top_k: int = 5
 ) -> UserProfile:
@@ -187,7 +184,6 @@ async def fetch_user_profile(
     return UserProfile(**row)
 
 
-@inject_db_connection
 async def upsert_to_db(
     conn: asyncpg.Connection,
     data_to_upsert: list[BaseModel],

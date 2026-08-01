@@ -1,15 +1,23 @@
+import csv
+import subprocess
+from pathlib import Path
+
+from etl.sql_queries import DatabaseConnector
 from schemas.modelling import ModelConfig
 
 import pytest
 import requests
 import asyncio
-import asyncpg
 import psycopg2
 
 from pytest_docker.plugin import DockerComposeExecutor, Services
 from filelock import FileLock
 
 from settings import DBSettings
+
+
+SQITCH_PATH = Path(__file__).parents[1] / "sqitch"
+FIXTURES_PATH = Path(__file__).parent / "fixtures" / "db"
 
 
 @pytest.fixture(scope="session")
@@ -45,7 +53,7 @@ def docker_services(
 
     with FileLock(str(lock_file)):
         if not flag_file.exists():
-            docker_compose.execute("-v down")
+            docker_compose.execute("down -v")
             docker_compose.execute("up --build -d")
             flag_file.write_text("started")
     yield Services(docker_compose)
@@ -85,6 +93,9 @@ def scraper_env(fake_site_url, monkeypatch):
     monkeypatch.setenv("SCRAPER_RATINGS_PAGE", f"{fake_site_url}/")
     monkeypatch.setenv("SCRAPER_MOVIES_PAGE", f"{fake_site_url}/films/popular/")
 
+
+@pytest.fixture(autouse=True)
+def db_env(monkeypatch):
     monkeypatch.setenv("DB_HOST", "localhost")
     monkeypatch.setenv("DB_USER", "postgres")
     monkeypatch.setenv("DB_PASS", "postgres")
@@ -93,18 +104,24 @@ def scraper_env(fake_site_url, monkeypatch):
 
 
 async def create_db(settings: DBSettings):
-    conn = await asyncpg.connect(settings.get_postgres_dsn("postgresql"))
-    assert conn is not None
-    await conn.execute("DROP DATABASE IF EXISTS test;")
-    await conn.execute("CREATE DATABASE test;")
-    await conn.close()
+    async with DatabaseConnector(db_settings=settings) as conn:
+        await conn.execute("""
+            SELECT pg_terminate_backend(pid)
+            FROM pg_stat_activity
+            WHERE datname = 'test' AND pid <> pg_backend_pid()
+        """)
+        await conn.execute("DROP DATABASE IF EXISTS test;")
+
+    async with DatabaseConnector(db_settings=settings) as conn:
+        await conn.execute("CREATE DATABASE test;")
+
     new_settings = settings.model_copy()
     new_settings.NAME = "test"
     return new_settings
 
 
 @pytest.fixture(scope="session")
-def db_service(docker_ip, docker_services):
+def db_service(docker_ip, docker_services, tmp_path_factory) -> DBSettings:
     port = docker_services.port_for("test-db", 5432)
 
     docker_services.wait_until_responsive(
@@ -118,7 +135,20 @@ def db_service(docker_ip, docker_services):
         PORT=port,
     )
 
-    new_settings = asyncio.run(create_db(settings))
+    root_tmp = tmp_path_factory.getbasetemp().parent
+    lock_file = root_tmp / "db_setup.lock"
+    flag_file = root_tmp / "db_setup.flag"
+
+    with FileLock(str(lock_file)):
+        if not flag_file.exists():
+            new_settings = asyncio.run(create_db(settings))
+            setup_test_db(new_settings)
+            load_fixtures(new_settings)
+            flag_file.write_text("done")
+        else:
+            new_settings = settings.model_copy()
+            new_settings.NAME = "test"
+
     return new_settings
 
 
@@ -147,3 +177,59 @@ def mock_model_config() -> ModelConfig:
         embedding_dim=64,
         learning_rate=0.001,
     )
+
+
+def run_sqitch(settings: DBSettings, command: str):
+    dsn = settings.get_postgres_dsn("db:pg")
+    result = subprocess.run(
+        [
+            "docker",
+            "run",
+            "--rm",
+            "--network",
+            "host",
+            "-v",
+            f"{SQITCH_PATH}:/repo",
+            "sqitch/sqitch:latest",
+            command,
+            "--target",
+            dsn,
+        ],
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+
+    if result.returncode != 0:
+        raise RuntimeError(
+            f"Sqitch {command} failed for the test database: {result.returncode}\n"
+            f"{result.stdout} \n----\n {result.stderr}"
+        )
+
+
+def setup_test_db(settings: DBSettings):
+    run_sqitch(settings, "deploy")
+
+
+def load_fixtures(settings: DBSettings):
+    # Order of the tables matters here
+    fixtures = [
+        ("users", ["id", "username"]),
+        (
+            "movies",
+            ["id", "title", "release_year", "director", "genres", "country", "actors"],
+        ),
+        ("movie_ratings", ["id", "user_id", "movie_id", "rating"]),
+    ]
+
+    for table, columns in fixtures:
+        with open(FIXTURES_PATH / f"{table}.csv") as f:
+            data = list(csv.DictReader(f))
+
+        values = ", ".join(f"%({col})s" for col in columns)
+        cols = ", ".join(columns)
+        query = f"INSERT INTO {table} ({cols}) VALUES ({values})"
+
+        with DatabaseConnector(db_settings=settings) as conn:
+            conn.cursor().executemany(query, data)
+            conn.commit()

@@ -7,11 +7,14 @@ BEGIN;
 ALTER TABLE movies DROP COLUMN genre;
 
 DROP TRIGGER IF EXISTS updated_at_trig ON users;
-
-DROP FUNCTION IF EXISTS updated_at_trig();
+DROP TRIGGER IF EXISTS updated_at_trig ON movies;
+DROP TRIGGER IF EXISTS updated_at_trig ON movie_ratings;
 
 DROP TRIGGER IF EXISTS created_at_trig ON users;
+DROP TRIGGER IF EXISTS created_at_trig ON movies;
+DROP TRIGGER IF EXISTS created_at_trig ON movie_ratings;
 
+DROP FUNCTION IF EXISTS updated_at_trig();
 DROP FUNCTION IF EXISTS created_at_trig();
 
 COMMIT;

@@ -1,6 +1,6 @@
 import dspy
 
-from etl.sql_queries import fetch_user_profile
+from etl.sql_queries import fetch_user_profile, DatabaseConnector
 from model.recommender import MovieReranker
 from settings import LLMSettings
 from schemas.recommendation import RecommendationOut, MovieCandidate
@@ -13,7 +13,9 @@ async def rerank(
     candidates: list[MovieCandidate],
     k: int = 10,
 ) -> list[RecommendationOut]:
-    user_profile = await fetch_user_profile(user_id, top_k=k)
+    async with DatabaseConnector() as conn:
+        user_profile = await fetch_user_profile(conn, user_id, top_k=k)
+
     reranker = MovieReranker()
 
     candidate_payload = [
