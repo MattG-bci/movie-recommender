@@ -1,3 +1,6 @@
+import subprocess
+from pathlib import Path
+
 from schemas.modelling import ModelConfig
 
 import pytest
@@ -10,6 +13,9 @@ from pytest_docker.plugin import DockerComposeExecutor, Services
 from filelock import FileLock
 
 from settings import DBSettings
+
+
+SQITCH_PATH = Path(__file__).parents[1] / "sqitch"
 
 
 @pytest.fixture(scope="session")
@@ -119,6 +125,7 @@ def db_service(docker_ip, docker_services):
     )
 
     new_settings = asyncio.run(create_db(settings))
+    setup_test_db(settings)
     return new_settings
 
 
@@ -147,3 +154,28 @@ def mock_model_config() -> ModelConfig:
         embedding_dim=64,
         learning_rate=0.001,
     )
+
+
+def setup_test_db(settings: DBSettings):
+    dsn = settings.get_postgres_dsn("db:pg")
+    result = subprocess.run(
+        [
+            "docker",
+            "run",
+            "--rm",
+            "--network",
+            "host",
+            "-v",
+            f"{SQITCH_PATH}:/repo",
+            "sqitch/sqitch:latest",
+            "deploy",
+            "--target",
+            dsn,
+        ],
+        check=True,
+    )
+    if result.returncode != 0:
+        raise RuntimeError(
+            f"Sqitch deployment failed for the test database: {result.returncode}\n"
+            f"{result.stdout} \n---- {result.stderr}"
+        )
