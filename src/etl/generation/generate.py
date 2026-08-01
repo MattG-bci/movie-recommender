@@ -1,3 +1,5 @@
+import asyncpg
+
 from etl.sql_queries import fetch_usernames_from_db, fetch_movies_from_db
 from schemas.movie import MovieRatingIn, MovieIn
 from schemas.users import UserIn, User
@@ -8,28 +10,31 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-async def generate_usernames(username_page: str) -> list[UserIn]:
+async def generate_usernames(
+    conn: asyncpg.Connection, username_page: str
+) -> list[UserIn]:
     usr_scraper = UserScraper(username_page_url=username_page)
-    existing_usernames = await fetch_usernames_from_db()
+    existing_usernames = await fetch_usernames_from_db(conn)
     usernames = await usr_scraper.scrape_page_incremental(existing_usernames)
     return usernames
 
 
-async def generate_movies(movies_page: str) -> list[MovieIn]:
+async def generate_movies(conn: asyncpg.Connection, movies_page: str) -> list[MovieIn]:
     movie_scraper = MovieScraper(movie_page_url=movies_page)
-    existing_movies = await fetch_movies_from_db()
+    existing_movies = await fetch_movies_from_db(conn)
     existing_movies = [movie.title for movie in existing_movies]
     movies = await movie_scraper.get_data_incremental(existing_movies)
     return movies
 
 
 async def generate_movie_ratings(
+    conn: asyncpg.Connection,
     usernames: list[User],
 ) -> list[MovieRatingIn]:
-    usernames_from_db = await fetch_usernames_from_db()
+    usernames_from_db = await fetch_usernames_from_db(conn)
     map_usernames_to_ids = {user.username: user.id for user in usernames_from_db}
 
-    movies_from_db = await fetch_movies_from_db()
+    movies_from_db = await fetch_movies_from_db(conn)
     map_movie_titles_to_ids = {movie.title: movie.id for movie in movies_from_db}
 
     rating_scraper = RatingScraper(usernames=usernames)

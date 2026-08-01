@@ -2,7 +2,7 @@ import pytest
 import asyncpg
 
 from .conftest import run_sqitch, setup_test_db, load_fixtures
-from etl.sql_queries import DatabaseConnector
+from etl.sql_queries import DatabaseConnector, fetch_usernames_from_db
 from settings import DBSettings
 
 
@@ -18,6 +18,15 @@ async def test_db_connection(db_service):
     )
     assert conn is not None
     await conn.close()
+
+
+@pytest.mark.asyncio
+async def test_fetch_usernames_from_db(db_service: DBSettings):
+    async with DatabaseConnector(db_settings=db_service) as conn:
+        users = await fetch_usernames_from_db(conn=conn)
+
+    assert len(users) == 3
+    assert [u.username for u in users] == ["testuser1", "testuser2", "testuser3"]
 
 
 @pytest.mark.asyncio

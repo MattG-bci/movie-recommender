@@ -8,7 +8,6 @@ from schemas.modelling import ModelConfig
 import pytest
 import requests
 import asyncio
-import asyncpg
 import psycopg2
 
 from pytest_docker.plugin import DockerComposeExecutor, Services
@@ -54,7 +53,7 @@ def docker_services(
 
     with FileLock(str(lock_file)):
         if not flag_file.exists():
-            docker_compose.execute("-v down")
+            docker_compose.execute("down -v")
             docker_compose.execute("up --build -d")
             flag_file.write_text("started")
     yield Services(docker_compose)
@@ -102,18 +101,24 @@ def scraper_env(fake_site_url, monkeypatch):
 
 
 async def create_db(settings: DBSettings):
-    conn = await asyncpg.connect(settings.get_postgres_dsn("postgresql"))
-    assert conn is not None
-    await conn.execute("DROP DATABASE IF EXISTS test;")
-    await conn.execute("CREATE DATABASE test;")
-    await conn.close()
+    async with DatabaseConnector(db_settings=settings) as conn:
+        await conn.execute("""
+            SELECT pg_terminate_backend(pid)
+            FROM pg_stat_activity
+            WHERE datname = 'test' AND pid <> pg_backend_pid()
+        """)
+        await conn.execute("DROP DATABASE IF EXISTS test;")
+
+    async with DatabaseConnector(db_settings=settings) as conn:
+        await conn.execute("CREATE DATABASE test;")
+
     new_settings = settings.model_copy()
     new_settings.NAME = "test"
     return new_settings
 
 
 @pytest.fixture(scope="session")
-def db_service(docker_ip, docker_services) -> DBSettings:
+def db_service(docker_ip, docker_services, tmp_path_factory) -> DBSettings:
     port = docker_services.port_for("test-db", 5432)
 
     docker_services.wait_until_responsive(
@@ -127,9 +132,20 @@ def db_service(docker_ip, docker_services) -> DBSettings:
         PORT=port,
     )
 
-    new_settings = asyncio.run(create_db(settings))
-    setup_test_db(new_settings)
-    load_fixtures(new_settings)
+    root_tmp = tmp_path_factory.getbasetemp().parent
+    lock_file = root_tmp / "db_setup.lock"
+    flag_file = root_tmp / "db_setup.flag"
+
+    with FileLock(str(lock_file)):
+        if not flag_file.exists():
+            new_settings = asyncio.run(create_db(settings))
+            setup_test_db(new_settings)
+            load_fixtures(new_settings)
+            flag_file.write_text("done")
+        else:
+            new_settings = settings.model_copy()
+            new_settings.NAME = "test"
+
     return new_settings
 
 
@@ -183,7 +199,7 @@ def run_sqitch(settings: DBSettings, command: str):
     if result.returncode != 0:
         raise RuntimeError(
             f"Sqitch {command} failed for the test database: {result.returncode}\n"
-            f"{result.stdout} \n---- {result.stderr}"
+            f"{result.stdout} \n----\n {result.stderr}"
         )
 
 
