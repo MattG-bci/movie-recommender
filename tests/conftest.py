@@ -93,6 +93,9 @@ def scraper_env(fake_site_url, monkeypatch):
     monkeypatch.setenv("SCRAPER_RATINGS_PAGE", f"{fake_site_url}/")
     monkeypatch.setenv("SCRAPER_MOVIES_PAGE", f"{fake_site_url}/films/popular/")
 
+
+@pytest.fixture(autouse=True)
+def db_env(monkeypatch):
     monkeypatch.setenv("DB_HOST", "localhost")
     monkeypatch.setenv("DB_USER", "postgres")
     monkeypatch.setenv("DB_PASS", "postgres")

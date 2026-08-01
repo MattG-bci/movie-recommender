@@ -24,6 +24,7 @@ from model.recommender import (
 )
 from schemas.modelling import TrainConfig, ModelConfig, PATH_TO_MODEL_WEIGHTS
 from schemas.recommendation import MovieCandidate
+from settings import DBSettings
 
 logging.basicConfig(
     level=logging.INFO,
@@ -98,7 +99,8 @@ async def train_recommender() -> None:
 async def recommend_movies(
     user_name: str, top_k: int = 10, exploration: float = 1.0, n_cf_candidates: int = 40
 ):
-    async with DatabaseConnector() as conn:
+    settings = DBSettings()
+    async with DatabaseConnector(db_settings=settings) as conn:
         movies = await fetch_movies_from_db(conn)
         user_names = await fetch_usernames_from_db(conn)
 

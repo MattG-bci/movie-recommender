@@ -25,7 +25,7 @@ async def get_readiness() -> dict[str, int]:
 
 @app.get("/ratings/{movie_id}")
 async def get_ratings(
-    movie_id: int | None = None, limit: int = 100, offset: int = 0
+    movie_id: int | None = None, limit: int = 100
 ) -> list[MovieRatingWithId]:
     async with DatabaseConnector() as conn:
         movies = await fetch_movie_ratings_from_db_for_movie(conn, movie_id, limit)

@@ -15,17 +15,21 @@ from settings import DBSettings
 
 class DatabaseConnector(BaseModel):
     connection: asyncpg.Connection | connection | None = None
-    db_settings: DBSettings = DBSettings()
+    db_settings: DBSettings | None = None
 
     model_config = dict(arbitrary_types_allowed=True)
 
+    def _get_settings(self) -> DBSettings:
+        return self.db_settings or DBSettings()
+
     def __enter__(self) -> connection:
+        settings = self._get_settings()
         self.connection = psycopg2.connect(
-            host=self.db_settings.HOST,
-            user=self.db_settings.USER,
-            password=self.db_settings.PASS,
-            database=self.db_settings.NAME,
-            port=self.db_settings.PORT,
+            host=settings.HOST,
+            user=settings.USER,
+            password=settings.PASS,
+            database=settings.NAME,
+            port=settings.PORT,
         )
         return self.connection
 
@@ -33,12 +37,13 @@ class DatabaseConnector(BaseModel):
         self.connection.close()
 
     async def __aenter__(self) -> asyncpg.Connection:
+        settings = self._get_settings()
         self.connection = await asyncpg.connect(
-            host=self.db_settings.HOST,
-            user=self.db_settings.USER,
-            password=self.db_settings.PASS,
-            database=self.db_settings.NAME,
-            port=self.db_settings.PORT,
+            host=settings.HOST,
+            user=settings.USER,
+            password=settings.PASS,
+            database=settings.NAME,
+            port=settings.PORT,
         )
         return self.connection
 
