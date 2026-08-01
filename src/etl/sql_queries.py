@@ -1,6 +1,8 @@
 import logging
 
 import asyncpg
+import psycopg2
+from psycopg2.extensions import connection
 from pydantic import BaseModel
 
 from typing import Any, Callable, Coroutine
@@ -13,10 +15,23 @@ from settings import DBSettings
 
 
 class DatabaseConnector(BaseModel):
-    connection: asyncpg.Connection = None
+    connection: asyncpg.Connection | connection | None = None
     db_settings: DBSettings = DBSettings()
 
     model_config = dict(arbitrary_types_allowed=True)
+
+    def __enter__(self) -> connection:
+        self.connection = psycopg2.connect(
+            host=self.db_settings.HOST,
+            user=self.db_settings.USER,
+            password=self.db_settings.PASS,
+            database=self.db_settings.NAME,
+            port=self.db_settings.PORT,
+        )
+        return self.connection
+
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+        self.connection.close()
 
     async def __aenter__(self) -> asyncpg.Connection:
         self.connection = await asyncpg.connect(

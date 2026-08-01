@@ -1,6 +1,8 @@
+import csv
 import subprocess
 from pathlib import Path
 
+from etl.sql_queries import DatabaseConnector
 from schemas.modelling import ModelConfig
 
 import pytest
@@ -16,6 +18,7 @@ from settings import DBSettings
 
 
 SQITCH_PATH = Path(__file__).parents[1] / "sqitch"
+FIXTURES_PATH = Path(__file__).parent / "fixtures" / "db"
 
 
 @pytest.fixture(scope="session")
@@ -125,7 +128,8 @@ def db_service(docker_ip, docker_services):
     )
 
     new_settings = asyncio.run(create_db(settings))
-    setup_test_db(settings)
+    setup_test_db(new_settings)
+    load_fixtures(new_settings)
     return new_settings
 
 
@@ -172,10 +176,36 @@ def setup_test_db(settings: DBSettings):
             "--target",
             dsn,
         ],
-        check=True,
+        capture_output=True,
+        text=True,
     )
+
     if result.returncode != 0:
         raise RuntimeError(
             f"Sqitch deployment failed for the test database: {result.returncode}\n"
             f"{result.stdout} \n---- {result.stderr}"
         )
+
+
+def load_fixtures(settings: DBSettings):
+    # Order of the tables matters here
+    fixtures = [
+        ("users", ["id", "username"]),
+        (
+            "movies",
+            ["id", "title", "release_year", "director", "genres", "country", "actors"],
+        ),
+        ("movie_ratings", ["id", "user_id", "movie_id", "rating"]),
+    ]
+
+    for table, columns in fixtures:
+        with open(FIXTURES_PATH / f"{table}.csv") as f:
+            data = list(csv.DictReader(f))
+
+        values = ", ".join(f"%({col})s" for col in columns)
+        cols = ", ".join(columns)
+        query = f"INSERT INTO {table} ({cols}) VALUES ({values})"
+
+        with DatabaseConnector(db_settings=settings) as conn:
+            conn.cursor().executemany(query, data)
+            conn.commit()
