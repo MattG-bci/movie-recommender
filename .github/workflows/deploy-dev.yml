@@ -39,4 +39,5 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL_DEV }}
         run: |
           cd sqitch
-          sqitch deploy "$DATABASE_URL"
+          SQITCH_TARGET=$(echo "$DATABASE_URL" | sed 's|^postgresql://|db:pg://|')
+          sqitch deploy "$SQITCH_TARGET"
