@@ -1,0 +1,45 @@
+name: Deploy Dev
+
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+  deploy:
+    name: Deploy API to Railway (Dev)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Deploy to Railway Dev
+        run: railway up --service api --environment dev
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_DEV }}
+
+  migrate:
+    name: Run Sqitch Migrations (Dev)
+    runs-on: ubuntu-latest
+    needs: deploy
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-perl@v1
+        with:
+          perl-version: '5.38'
+
+      - name: Install Sqitch and PostgreSQL driver
+        run: |
+          cpanm --notest App::Sqitch DBD::Pg
+
+      - name: Run migrations
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL_DEV }}
+        run: |
+          cd sqitch
+          sqitch deploy "$DATABASE_URL"
