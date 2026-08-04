@@ -29,13 +29,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-perl@v1
-        with:
-          perl-version: '5.38'
-
-      - name: Install Sqitch and PostgreSQL driver
+      - name: Install Sqitch and dependencies
         run: |
-          cpanm --notest App::Sqitch DBD::Pg
+          sudo apt-get update
+          sudo apt-get install -y sqitch libdbd-pg-perl
 
       - name: Run migrations
         env:
