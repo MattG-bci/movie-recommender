@@ -39,6 +39,7 @@ playwright-stealth = "^2.0.3"
 anthropic = "^0.112.0"
 dspy = "^3.2.1"
 litellm = "1.83.0"
+click = "<8.2"
 
 [tool.poetry.group.ml.dependencies]
 torch = "^2.5.1"
