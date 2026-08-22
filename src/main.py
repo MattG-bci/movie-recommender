@@ -43,19 +43,19 @@ def async_typer_command(func):
 
 @app.command()
 @async_typer_command
-async def ingest_users() -> None:
+async def run_usernames_ingestion() -> None:
     await ingest_usernames()
 
 
 @app.command()
 @async_typer_command
-async def ingest_movies_command() -> None:
+async def run_movies_ingestion() -> None:
     await ingest_movies()
 
 
 @app.command()
 @async_typer_command
-async def ingest_ratings() -> None:
+async def run_ratings_ingestion() -> None:
     await ingest_movie_ratings()
 
 
@@ -78,7 +78,7 @@ async def run_recommender_training(save_model: bool = True) -> None:
 
 @app.command()
 @async_typer_command
-async def recommend_movies(
+async def run_movie_recommendation(
     user_name: str, top_k: int = 10, exploration: float = 1.0, n_cf_candidates: int = 40
 ):
     settings = DBSettings()

@@ -3,6 +3,7 @@ import torch
 from pydantic import BaseModel
 from torch import nn
 import logging
+from typing import Any
 
 from schemas.modelling import ModelConfig
 from schemas.movie import Movie
@@ -17,7 +18,13 @@ class MovieReranker(dspy.Module):
         super().__init__()
         self.rerank = dspy.ChainOfThought(RerankMovies)
 
-    def forward(self, request, exploration, user_profile, candidates):
+    def forward(
+        self,
+        request: str,
+        exploration: float,
+        user_profile: dict[str, Any],
+        candidates: list[dict[str, Any]],
+    ):
         return self.rerank(
             request=request,
             exploration=exploration,
