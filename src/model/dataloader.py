@@ -28,19 +28,15 @@ def construct_datasets(
     for rating in ratings:
         user_ratings[rating.user_id].append(rating)
 
-    user_ids = list(user_ratings.keys())
-    if shuffle:
-        random.shuffle(user_ids)
+    train_ratings: list[MovieRatingWithId] = []
+    val_ratings: list[MovieRatingWithId] = []
 
-    train_user_count = int(train_split * len(user_ids))
-    train_user_ids = set(user_ids[:train_user_count])
-
-    train_ratings = [
-        r for uid in user_ids if uid in train_user_ids for r in user_ratings[uid]
-    ]
-    val_ratings = [
-        r for uid in user_ids if uid not in train_user_ids for r in user_ratings[uid]
-    ]
+    for user_id, ratings_for_user in user_ratings.items():
+        if shuffle:
+            random.shuffle(ratings_for_user)
+        split_idx = max(1, int(train_split * len(ratings_for_user)))
+        train_ratings.extend(ratings_for_user[:split_idx])
+        val_ratings.extend(ratings_for_user[split_idx:])
 
     return MoviesDataset(train_ratings), MoviesDataset(val_ratings)
 

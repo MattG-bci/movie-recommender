@@ -42,57 +42,52 @@ def _make_ratings_by_user(
 
 
 def test_construct_datasets_split_sizes():
-    ratings = _make_ratings_by_user(n_users=10, ratings_per_user=3)
+    ratings = _make_ratings_by_user(n_users=10, ratings_per_user=10)
     train_ds, val_ds = construct_datasets(ratings, train_split=0.7, shuffle=False)
 
-    assert len(train_ds) == 21
-    assert len(val_ds) == 9
-    assert len(train_ds) + len(val_ds) == 30
+    assert len(train_ds) + len(val_ds) == 100
+    assert len(train_ds) == 70
+    assert len(val_ds) == 30
 
 
-def test_construct_datasets_no_user_leakage():
-    ratings = _make_ratings_by_user(n_users=10, ratings_per_user=5)
+def test_construct_datasets_no_rating_leakage():
+    ratings = _make_ratings_by_user(n_users=5, ratings_per_user=10)
+    train_ds, val_ds = construct_datasets(ratings, train_split=0.7, shuffle=False)
+
+    train_ratings = {float(row[2]) for row in train_ds}
+    val_ratings = {float(row[2]) for row in val_ds}
+
+    assert train_ratings.isdisjoint(val_ratings), "No rating should appear in both sets"
+
+
+def test_construct_datasets_every_user_in_train():
+    ratings = _make_ratings_by_user(n_users=5, ratings_per_user=10)
     train_ds, val_ds = construct_datasets(ratings, train_split=0.7, shuffle=False)
 
     train_user_ids = {int(row[0]) for row in train_ds}
     val_user_ids = {int(row[0]) for row in val_ds}
 
-    assert train_user_ids.isdisjoint(
-        val_user_ids
-    ), "No user should appear in both train and val sets"
+    assert train_user_ids == {0, 1, 2, 3, 4}
+    assert val_user_ids == {0, 1, 2, 3, 4}
 
 
 def test_construct_datasets_preserves_all_data():
-    ratings = _make_ratings_by_user(n_users=10, ratings_per_user=3)
+    ratings = _make_ratings_by_user(n_users=5, ratings_per_user=10)
     train_ds, val_ds = construct_datasets(ratings, train_split=0.7, shuffle=False)
 
     all_ratings = {float(row[2]) for row in train_ds} | {
         float(row[2]) for row in val_ds
     }
-    expected_ratings = {float(i) for i in range(1, 31)}
+    expected_ratings = {float(i) for i in range(1, 51)}
 
     assert all_ratings == expected_ratings
 
 
-def test_construct_datasets_different_split_ratios():
-    ratings = _make_ratings_by_user(n_users=10, ratings_per_user=2)
-
-    train_ds, val_ds = construct_datasets(ratings, train_split=0.5, shuffle=False)
-    assert len(train_ds) == 10
-    assert len(val_ds) == 10
-
-    ratings = _make_ratings_by_user(n_users=10, ratings_per_user=2)
-    train_ds, val_ds = construct_datasets(ratings, train_split=0.9, shuffle=False)
-    assert len(train_ds) == 18
-    assert len(val_ds) == 2
-
-
-def test_construct_datasets_order_preserved_without_shuffle():
+def test_construct_datasets_every_user_has_at_least_one_train_rating():
     ratings = _make_ratings_by_user(n_users=5, ratings_per_user=2)
-    train_ds, val_ds = construct_datasets(ratings, train_split=0.6, shuffle=False)
+    train_ds, val_ds = construct_datasets(ratings, train_split=0.5, shuffle=False)
 
-    train_rating_values = [float(train_ds[i][2]) for i in range(len(train_ds))]
-    val_rating_values = [float(val_ds[i][2]) for i in range(len(val_ds))]
+    train_user_ids = {int(row[0]) for row in train_ds}
 
-    assert train_rating_values == [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
-    assert val_rating_values == [7.0, 8.0, 9.0, 10.0]
+    assert train_user_ids == {0, 1, 2, 3, 4}
+    assert len(train_ds) >= 5
