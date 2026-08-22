@@ -8,7 +8,7 @@ from schemas.users import User
 
 def prepare_recommendation_mappings(
     movies: list[Movie], user_names: list[User], user_name: str
-) -> tuple[dict[int, int], int, list[int], int, int]:
+) -> tuple[dict[int, int], int, int, list[int], int, int]:
     map_movie_id_to_recommender_id = get_model_id_to_recommender_id_mapping(
         movies, "id"
     )
@@ -33,6 +33,7 @@ def prepare_recommendation_mappings(
     return (
         map_recommender_id_to_movie_id,
         recommender_user_id,
+        database_user_id,
         movie_ids,
         n_users,
         n_movies,
@@ -58,6 +59,7 @@ def get_model_id_to_recommender_id_mapping(
     models: list[BaseModel], id_field_name: str
 ) -> dict[int, int]:
     ids = {getattr(model, id_field_name) for model in models}
+    ids = sorted(ids)
     return {model_id: idx for idx, model_id in enumerate(ids)}
 
 

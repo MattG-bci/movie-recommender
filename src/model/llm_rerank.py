@@ -88,6 +88,7 @@ async def recommend_movies(
     (
         map_recommender_id_to_movie_id,
         recommender_user_id,
+        database_user_id,
         movie_ids,
         n_users,
         n_movies,
@@ -109,7 +110,7 @@ async def recommend_movies(
 
     logger.info("Reranking...")
     reranked_recommendations = await rerank(
-        recommender_user_id, prompt, exploration, candidates=candidates, k=top_k
+        database_user_id, prompt, exploration, candidates=candidates, k=top_k
     )
     logger.info(
         f"Here is top {top_k} movie recommendations after reranking: {reranked_recommendations}"

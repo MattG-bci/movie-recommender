@@ -76,7 +76,7 @@ def test_prepare_recommendation_mappings():
     movies = _make_movies()
     users = _make_users()
 
-    mapping, rec_user_id, movie_ids, n_users, n_movies = (
+    mapping, rec_user_id, db_user_id, movie_ids, n_users, n_movies = (
         prepare_recommendation_mappings(movies, users, "alice")
     )
 
@@ -91,7 +91,7 @@ def test_prepare_recommendation_mappings_reverse_mapping_is_consistent():
     movies = _make_movies()
     users = _make_users()
 
-    mapping, _, movie_ids, _, _ = prepare_recommendation_mappings(
+    mapping, _, _, movie_ids, _, _ = prepare_recommendation_mappings(
         movies, users, "alice"
     )
 
