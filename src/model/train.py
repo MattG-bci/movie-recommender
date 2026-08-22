@@ -12,10 +12,10 @@ from model.dataloader import construct_datasets
 from model.evaluate import calculate_metrics
 from model.recommender import (
     logger,
-    get_model_id_to_recommender_id_mapping,
     prepare_model_config,
     CFRecommender,
 )
+from model.processing import preprocess_movie_ratings
 from schemas.modelling import ModelTrainConfig, ModelTrainHyperparameters
 from schemas.movie import MovieRatingWithId, Movie
 from schemas.users import User
@@ -43,25 +43,6 @@ def get_device() -> torch.device:
         if torch.backends.mps.is_available()
         else "cpu"
     )
-
-
-def preprocess_movie_ratings(
-    ratings: list[MovieRatingWithId], movies: list[Movie], users: list[User]
-) -> list[MovieRatingWithId]:
-    map_movie_id_to_recommender_id = get_model_id_to_recommender_id_mapping(
-        movies, "id"
-    )
-    map_user_id_to_recommender_id = get_model_id_to_recommender_id_mapping(users, "id")
-    ratings = [
-        rating.model_copy(
-            update={
-                "user_id": map_user_id_to_recommender_id[rating.user_id],
-                "movie_id": map_movie_id_to_recommender_id[rating.movie_id],
-            }
-        )
-        for rating in ratings
-    ]
-    return ratings
 
 
 @timeit

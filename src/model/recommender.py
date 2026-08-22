@@ -1,11 +1,10 @@
 import dspy
 import torch
-from pydantic import BaseModel
 from torch import nn
 import logging
 from typing import Any
 
-from schemas.modelling import ModelConfig
+from schemas.modelling import ModelConfig, PATH_TO_MODEL_WEIGHTS
 from schemas.movie import Movie
 from schemas.recommendation import RerankMovies
 from schemas.users import User
@@ -100,8 +99,29 @@ def prepare_model_config(movies: list[Movie], users: list[User]) -> ModelConfig:
     return model_config
 
 
-def get_model_id_to_recommender_id_mapping(
-    models: list[BaseModel], id_field_name: str
-) -> dict[int, int]:
-    ids = {getattr(model, id_field_name) for model in models}
-    return {model_id: idx for idx, model_id in enumerate(ids)}
+def load_cf_recommender(n_users: int, n_movies: int) -> CFRecommender:
+    model_config = ModelConfig(n_users=n_users, n_movies=n_movies)
+    state_dict = torch.load(PATH_TO_MODEL_WEIGHTS, map_location=torch.device("cpu"))
+    model = CFRecommender(model_config)
+    model.load_state_dict(state_dict)
+    return model
+
+
+def get_cf_recommendations(
+    model: CFRecommender,
+    recommender_user_id: int,
+    movie_ids: list[int],
+    map_recommender_id_to_movie_id: dict[int, int],
+    n_cf_candidates: int,
+) -> tuple[list[int], torch.Tensor]:
+    user_id_tensor = torch.tensor([recommender_user_id]).to(torch.device("cpu"))
+    movie_id_tensor = torch.tensor(movie_ids).to(torch.device("cpu"))
+    recommendations, cf_scores = model.get_top_k_recommendations(
+        user_id_tensor, movie_id_tensor, k=n_cf_candidates
+    )
+
+    recommended_movie_ids = [
+        map_recommender_id_to_movie_id.get(int(recommended_movie_id))
+        for recommended_movie_id in recommendations
+    ]
+    return recommended_movie_ids, cf_scores

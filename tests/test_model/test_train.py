@@ -1,6 +1,7 @@
 from datetime import datetime
 
-from model.train import preprocess_movie_ratings, prepare_train_config_for_cfrecommender
+from model.train import prepare_train_config_for_cfrecommender
+from model.processing import preprocess_movie_ratings
 from schemas.movie import MovieRatingWithId, Movie
 from schemas.modelling import ModelTrainConfig
 from schemas.users import User
