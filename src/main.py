@@ -14,15 +14,13 @@ from etl.sql_queries import (
     fetch_movies_from_db,
     fetch_usernames_from_db,
 )
-from model.dataloader import construct_datasets
 from model.llm_rerank import rerank
-from model.train import train_movie_recommender, get_device, preprocess_movie_ratings
+from model.train import train_movie_recommender, prepare_train_config_for_cfrecommender
 from model.recommender import (
-    prepare_model_config,
     CFRecommender,
     get_model_id_to_recommender_id_mapping,
 )
-from schemas.modelling import TrainConfig, ModelConfig, PATH_TO_MODEL_WEIGHTS
+from schemas.modelling import ModelConfig, PATH_TO_MODEL_WEIGHTS
 from schemas.recommendation import MovieCandidate
 from settings import DBSettings
 
@@ -78,16 +76,8 @@ async def train_recommender() -> None:
         movies = await fetch_movies_from_db(conn)
         user_names = await fetch_usernames_from_db(conn)
 
-    device = get_device()
-    model_config = prepare_model_config(movies, user_names)
-    model = CFRecommender(model_config)
-    processed_ratings = preprocess_movie_ratings(ratings, movies, user_names)
-    train_dataset, val_dataset = construct_datasets(processed_ratings)
-    train_config = TrainConfig(
-        model=model,
-        train_dataset=train_dataset,
-        val_dataset=val_dataset,
-        device=device,
+    train_config = prepare_train_config_for_cfrecommender(
+        user_names=user_names, movies=movies, ratings=ratings
     )
     model = train_movie_recommender(train_config)
     logger.info("Saving trained model...")
