@@ -1,8 +1,13 @@
 from collections import defaultdict
 
 import torch
-import torch.nn as nn
 
+from etl.sql_queries import (
+    DatabaseConnector,
+    fetch_movie_ratings_from_db,
+    fetch_movies_from_db,
+    fetch_usernames_from_db,
+)
 from model.dataloader import construct_datasets
 from model.evaluate import calculate_metrics
 from model.recommender import (
@@ -11,10 +16,23 @@ from model.recommender import (
     prepare_model_config,
     CFRecommender,
 )
-from schemas.modelling import TrainConfig, TrainHyperparameters
+from schemas.modelling import ModelTrainConfig, ModelTrainHyperparameters
 from schemas.movie import MovieRatingWithId, Movie
 from schemas.users import User
 from utils.model_size import timeit
+
+
+async def train_recommender() -> CFRecommender:
+    async with DatabaseConnector() as conn:
+        ratings = await fetch_movie_ratings_from_db(conn)
+        movies = await fetch_movies_from_db(conn)
+        user_names = await fetch_usernames_from_db(conn)
+
+    train_config = prepare_train_config_for_cfrecommender(
+        user_names=user_names, movies=movies, ratings=ratings
+    )
+    model = train_movie_recommender(train_config)
+    return model
 
 
 def get_device() -> torch.device:
@@ -47,7 +65,7 @@ def preprocess_movie_ratings(
 
 
 @timeit
-def train_movie_recommender(config: TrainConfig) -> nn.Module:
+def train_movie_recommender(config: ModelTrainConfig) -> CFRecommender:
     model = config.model
     device = config.device
     model.to(device)
@@ -110,8 +128,8 @@ def train_movie_recommender(config: TrainConfig) -> nn.Module:
 
 def prepare_train_config_for_cfrecommender(
     user_names: list[User], movies: list[Movie], ratings: list[MovieRatingWithId]
-) -> TrainConfig:
-    hyperparams = TrainHyperparameters()
+) -> ModelTrainConfig:
+    hyperparams = ModelTrainHyperparameters()
 
     logger.info("Constructing dataloaders for recommender training..")
     processed_ratings = preprocess_movie_ratings(ratings, movies, user_names)
@@ -129,7 +147,7 @@ def prepare_train_config_for_cfrecommender(
     model = CFRecommender(model_config)
 
     device = get_device()
-    train_config = TrainConfig(
+    train_config = ModelTrainConfig(
         model=model,
         train_dataloader=train_dataloader,
         val_dataloader=val_dataloader,

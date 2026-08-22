@@ -2,7 +2,7 @@ from datetime import datetime
 
 from model.train import preprocess_movie_ratings, prepare_train_config_for_cfrecommender
 from schemas.movie import MovieRatingWithId, Movie
-from schemas.modelling import TrainConfig
+from schemas.modelling import ModelTrainConfig
 from schemas.users import User
 
 
@@ -125,7 +125,7 @@ def test_prepare_train_config_for_cfrecommender():
         mock_users, mock_movies, mock_ratings
     )
 
-    assert isinstance(result, TrainConfig)
+    assert isinstance(result, ModelTrainConfig)
     assert len(result.train_dataloader.dataset) + len(
         result.val_dataloader.dataset
     ) == len(mock_ratings)

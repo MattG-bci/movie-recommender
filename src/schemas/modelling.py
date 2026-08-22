@@ -11,18 +11,18 @@ PATH_TO_MODEL_WEIGHTS = "models/recommender_model.pth"
 
 
 @dataclass
-class TrainHyperparameters:
+class ModelTrainHyperparameters:
     epochs: int = 10
     batch_size: int = 64
 
 
 @dataclass
-class TrainConfig:
+class ModelTrainConfig:
     model: nn.Module
     train_dataloader: DataLoader[MoviesDataset]
     val_dataloader: DataLoader[MoviesDataset]
     device: torch.device
-    hyperparams: TrainHyperparameters
+    hyperparams: ModelTrainHyperparameters
 
 
 @dataclass

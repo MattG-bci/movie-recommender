@@ -10,12 +10,11 @@ import torch
 
 from etl.sql_queries import (
     DatabaseConnector,
-    fetch_movie_ratings_from_db,
     fetch_movies_from_db,
     fetch_usernames_from_db,
 )
 from model.llm_rerank import rerank
-from model.train import train_movie_recommender, prepare_train_config_for_cfrecommender
+from model.train import train_recommender
 from model.recommender import (
     CFRecommender,
     get_model_id_to_recommender_id_mapping,
@@ -70,18 +69,11 @@ async def run_all_ingestion() -> None:
 
 @app.command()
 @async_typer_command
-async def train_recommender() -> None:
-    async with DatabaseConnector() as conn:
-        ratings = await fetch_movie_ratings_from_db(conn)
-        movies = await fetch_movies_from_db(conn)
-        user_names = await fetch_usernames_from_db(conn)
-
-    train_config = prepare_train_config_for_cfrecommender(
-        user_names=user_names, movies=movies, ratings=ratings
-    )
-    model = train_movie_recommender(train_config)
-    logger.info("Saving trained model...")
-    torch.save(model.state_dict(), PATH_TO_MODEL_WEIGHTS)
+async def run_recommender_training(save_model: bool = True) -> None:
+    model = await train_recommender()
+    if save_model:
+        logger.info("Saving trained model...")
+        torch.save(model.state_dict(), PATH_TO_MODEL_WEIGHTS)
 
 
 @app.command()
