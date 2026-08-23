@@ -4,4 +4,4 @@ from model.recommender import CFRecommender
 
 def test_compute_model_size(mock_model_config):
     recommender = CFRecommender(mock_model_config)
-    assert compute_model_size(recommender) == 0.1
+    assert compute_model_size(recommender) == 0.05

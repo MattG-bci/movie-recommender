@@ -42,11 +42,6 @@ class CFRecommender(nn.Module):
         self.user_embedding = nn.Embedding(
             self.config.n_users, self.config.embedding_dim
         )
-        self.head = nn.Sequential(
-            nn.Linear(self.config.embedding_dim * 3, self.config.embedding_dim),
-            nn.ReLU(),
-            nn.Linear(self.config.embedding_dim, 1),
-        )
 
         self.loss = self.config.loss
 
@@ -58,11 +53,13 @@ class CFRecommender(nn.Module):
         user_vecs = self.dropout(self.user_embedding(user_ids))
         movie_vecs = self.dropout(self.movie_embedding(movie_ids))
 
-        interaction = user_vecs * movie_vecs
-        out = torch.concat([user_vecs, movie_vecs, interaction], dim=-1)
-        preds = self.head(out)
-        preds = preds + self.movie_bias(movie_ids) + self.user_bias(user_ids)
-        return preds.squeeze()
+        dot = torch.mul(user_vecs, movie_vecs).sum(dim=-1)
+        preds = (
+            dot
+            + self.movie_bias(movie_ids).squeeze()
+            + self.user_bias(user_ids).squeeze()
+        )
+        return preds
 
     def predict(
         self,
