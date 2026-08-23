@@ -29,8 +29,8 @@ class ModelTrainConfig:
 class ModelConfig:
     n_users: int
     n_movies: int
-    embedding_dim: int = 32
-    learning_rate: float = 0.01
+    embedding_dim: int = 8
+    learning_rate: float = 0.003
     loss: nn.Module = nn.MSELoss()
-    weight_decay: float = 0.0
+    weight_decay: float = 0.00001
     dropout_rate: float = 0.3
