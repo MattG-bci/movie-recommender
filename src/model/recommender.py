@@ -42,27 +42,25 @@ class CFRecommender(nn.Module):
         self.user_embedding = nn.Embedding(
             self.config.n_users, self.config.embedding_dim
         )
-        self.head = nn.Linear(
-            self.user_embedding.embedding_dim + self.movie_embedding.embedding_dim, 1
+        self.head = nn.Sequential(
+            nn.Linear(self.config.embedding_dim * 3, self.config.embedding_dim),
+            nn.ReLU(),
+            nn.Linear(self.config.embedding_dim, 1),
         )
 
         self.loss = self.config.loss
 
-        self.dropout = nn.Dropout(p=0.2)
+        self.dropout = nn.Dropout(p=self.config.dropout_rate)
         self.user_bias = nn.Embedding(self.config.n_users, 1)
         self.movie_bias = nn.Embedding(self.config.n_movies, 1)
-        nn.init.normal_(self.user_embedding.weight, std=0.01)
-        nn.init.normal_(self.movie_embedding.weight, std=0.01)
-        nn.init.zeros_(self.user_bias.weight)
-        nn.init.zeros_(self.movie_bias.weight)
 
     def forward(self, user_ids: torch.Tensor, movie_ids: torch.Tensor) -> torch.Tensor:
         user_vecs = self.dropout(self.user_embedding(user_ids))
         movie_vecs = self.dropout(self.movie_embedding(movie_ids))
 
-        out = torch.concat([user_vecs, movie_vecs], dim=-1)
-        preds = self.head(out)
-
+        interaction = user_vecs * movie_vecs  # element-wise product
+        out = torch.concat([user_vecs, movie_vecs, interaction], dim=-1)
+        preds = self.head(out)  # update head input dim to embed_dim * 3
         preds = preds + self.user_bias(user_ids) + self.movie_bias(movie_ids)
         return preds.squeeze()
 
