@@ -51,27 +51,33 @@ class CFRecommender(nn.Module):
         self.loss = self.config.loss
 
         self.dropout = nn.Dropout(p=self.config.dropout_rate)
-        self.user_bias = nn.Embedding(self.config.n_users, 1)
         self.movie_bias = nn.Embedding(self.config.n_movies, 1)
+        self.user_bias = nn.Embedding(self.config.n_users, 1)
 
     def forward(self, user_ids: torch.Tensor, movie_ids: torch.Tensor) -> torch.Tensor:
         user_vecs = self.dropout(self.user_embedding(user_ids))
         movie_vecs = self.dropout(self.movie_embedding(movie_ids))
 
-        interaction = user_vecs * movie_vecs  # element-wise product
+        interaction = user_vecs * movie_vecs
         out = torch.concat([user_vecs, movie_vecs, interaction], dim=-1)
-        preds = self.head(out)  # update head input dim to embed_dim * 3
-        preds = preds + self.user_bias(user_ids) + self.movie_bias(movie_ids)
+        preds = self.head(out)
+        preds = preds + self.movie_bias(movie_ids) + self.user_bias(user_ids)
         return preds.squeeze()
 
-    def predict(self, user_id: torch.Tensor, movie_ids: torch.Tensor) -> torch.Tensor:
+    def predict(
+        self,
+        user_id: torch.Tensor,
+        movie_ids: torch.Tensor,
+    ) -> torch.Tensor:
         preds = self.forward(user_id, movie_ids)
-        # ratings only range from 1 to 10
         clamped_preds = torch.clamp(min=1.0, max=10.0, input=preds)
         return clamped_preds.squeeze()
 
     def get_top_k_recommendations(
-        self, user_id: torch.Tensor, movie_ids: torch.Tensor, k: int = 5
+        self,
+        user_id: torch.Tensor,
+        movie_ids: torch.Tensor,
+        k: int = 5,
     ) -> tuple[torch.Tensor, torch.Tensor]:
         self.eval()
         with torch.no_grad():

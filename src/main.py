@@ -8,6 +8,7 @@ import torch
 
 from model.train import train_recommender
 from model.llm_rerank import recommend_movies
+
 from schemas.modelling import PATH_TO_MODEL_WEIGHTS
 
 logging.basicConfig(
