@@ -12,8 +12,8 @@ PATH_TO_MODEL_WEIGHTS = "models/recommender_model.pth"
 
 @dataclass
 class ModelTrainHyperparameters:
-    epochs: int = 10
-    batch_size: int = 128
+    epochs: int = 100
+    batch_size: int = 64
 
 
 @dataclass
@@ -29,7 +29,8 @@ class ModelTrainConfig:
 class ModelConfig:
     n_users: int
     n_movies: int
-    embedding_dim: int = 128
-    learning_rate: float = 0.01
+    embedding_dim: int = 16
+    learning_rate: float = 0.003
     loss: nn.Module = nn.MSELoss()
-    weight_decay: float = 0.0001
+    weight_decay: float = 0.00001
+    dropout_rate: float = 0.3

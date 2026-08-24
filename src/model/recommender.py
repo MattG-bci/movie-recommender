@@ -42,38 +42,39 @@ class CFRecommender(nn.Module):
         self.user_embedding = nn.Embedding(
             self.config.n_users, self.config.embedding_dim
         )
-        self.head = nn.Linear(
-            self.user_embedding.embedding_dim + self.movie_embedding.embedding_dim, 1
-        )
 
         self.loss = self.config.loss
 
-        self.dropout = nn.Dropout(p=0.2)
-        self.user_bias = nn.Embedding(self.config.n_users, 1)
+        self.dropout = nn.Dropout(p=self.config.dropout_rate)
         self.movie_bias = nn.Embedding(self.config.n_movies, 1)
-        nn.init.normal_(self.user_embedding.weight, std=0.01)
-        nn.init.normal_(self.movie_embedding.weight, std=0.01)
-        nn.init.zeros_(self.user_bias.weight)
-        nn.init.zeros_(self.movie_bias.weight)
+        self.user_bias = nn.Embedding(self.config.n_users, 1)
 
     def forward(self, user_ids: torch.Tensor, movie_ids: torch.Tensor) -> torch.Tensor:
         user_vecs = self.dropout(self.user_embedding(user_ids))
         movie_vecs = self.dropout(self.movie_embedding(movie_ids))
 
-        out = torch.concat([user_vecs, movie_vecs], dim=-1)
-        preds = self.head(out)
+        dot = torch.mul(user_vecs, movie_vecs).sum(dim=-1)
+        preds = (
+            dot
+            + self.movie_bias(movie_ids).squeeze()
+            + self.user_bias(user_ids).squeeze()
+        )
+        return preds
 
-        preds = preds + self.user_bias(user_ids) + self.movie_bias(movie_ids)
-        return preds.squeeze()
-
-    def predict(self, user_id: torch.Tensor, movie_ids: torch.Tensor) -> torch.Tensor:
+    def predict(
+        self,
+        user_id: torch.Tensor,
+        movie_ids: torch.Tensor,
+    ) -> torch.Tensor:
         preds = self.forward(user_id, movie_ids)
-        # ratings only range from 1 to 10
         clamped_preds = torch.clamp(min=1.0, max=10.0, input=preds)
         return clamped_preds.squeeze()
 
     def get_top_k_recommendations(
-        self, user_id: torch.Tensor, movie_ids: torch.Tensor, k: int = 5
+        self,
+        user_id: torch.Tensor,
+        movie_ids: torch.Tensor,
+        k: int = 5,
     ) -> tuple[torch.Tensor, torch.Tensor]:
         self.eval()
         with torch.no_grad():
