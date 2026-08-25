@@ -15,3 +15,6 @@ verify-db:
 
 pipeline *ARGS:
     python3 src/main.py {{ARGS}}
+
+api:
+    uv run uvicorn api.app:app --reload
