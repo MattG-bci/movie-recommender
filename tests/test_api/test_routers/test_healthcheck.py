@@ -1,8 +1,11 @@
-def test_health(mock_client):
-    out = mock_client.get("/health")
+import requests
+
+
+def test_health(api_url):
+    out = requests.get(f"{api_url}/health")
     assert out.json() == {"status": 200}
 
 
-def test_readiness(mock_client):
-    out = mock_client.get("/readiness")
+def test_readiness(api_url):
+    out = requests.get(f"{api_url}/readiness")
     assert out.json() == {"status": 200}

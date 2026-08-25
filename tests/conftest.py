@@ -2,9 +2,7 @@ import csv
 import subprocess
 from pathlib import Path
 
-from starlette.testclient import TestClient
 
-from api.app import app
 from etl.sql_queries import DatabaseConnector
 from schemas.modelling import ModelConfig
 
@@ -238,7 +236,13 @@ def load_fixtures(settings: DBSettings):
             conn.commit()
 
 
-@pytest.fixture
-def mock_client(db_service):
-    with TestClient(app) as c:
-        yield c
+@pytest.fixture(scope="session")
+def api_url(docker_ip, docker_services, db_service):
+    port = docker_services.port_for("test-api", 8080)
+    url = f"http://{docker_ip}:{port}"
+    docker_services.wait_until_responsive(
+        timeout=30,
+        pause=1,
+        check=lambda: is_site_responsive(f"{url}/health"),
+    )
+    return url

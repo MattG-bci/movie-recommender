@@ -95,8 +95,8 @@ async def fetch_ratings(
     ON m.id = mr.movie_id
     WHERE ($1::text IS NULL OR u.username = $1)
     AND ($2::text IS NULL OR m.title = $2)
-    LIMIT $3::integer
     ORDER BY u.username, m.title
+    LIMIT $3::integer
     """
     rows = await conn.fetch(query, username, movie_name, limit)
     return [MovieRating(**dict(row)) for row in rows]
