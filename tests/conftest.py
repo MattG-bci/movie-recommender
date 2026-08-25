@@ -2,6 +2,9 @@ import csv
 import subprocess
 from pathlib import Path
 
+from starlette.testclient import TestClient
+
+from api.app import app
 from etl.sql_queries import DatabaseConnector
 from schemas.modelling import ModelConfig
 
@@ -233,3 +236,9 @@ def load_fixtures(settings: DBSettings):
         with DatabaseConnector(db_settings=settings) as conn:
             conn.cursor().executemany(query, data)
             conn.commit()
+
+
+@pytest.fixture
+def mock_client(db_service):
+    with TestClient(app) as c:
+        yield c
