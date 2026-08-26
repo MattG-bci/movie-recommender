@@ -26,6 +26,23 @@ class MovieCandidate(BaseModel):
     cf_score: float
 
 
+class ImageSemantics(BaseModel):
+    energy: str
+    mood: str
+    suggested_genres: list[str]
+    avoid_genres: list[str]
+
+
+class ExtractImageSemantics(dspy.Signature):
+    image: dspy.Image = dspy.InputField(
+        desc="Image describing the mood, vibe and current state which is used for reranking movies to help find more suitable candidates"
+    )
+
+    output: ImageSemantics = dspy.OutputField(
+        desc="Semantics, mood and vibe extracted from an input image. Suggested movie genres to watch and to avoid included in the response"
+    )
+
+
 class RerankMovies(dspy.Signature):
     """
     Re-rank candidate movies for a user, balancing their established taste
@@ -49,7 +66,7 @@ class RerankMovies(dspy.Signature):
     candidates: list[MovieCandidate] = dspy.InputField(
         desc="Candidate movies with id, title, metadata, cf_score"
     )
-    image: dspy.Image | None = dspy.InputField(
+    image_semantics: ImageSemantics | None = dspy.InputField(
         desc="Image describing the mood, vibe and current state which is used for reranking movies to help find more suitable candidates"
     )
 
