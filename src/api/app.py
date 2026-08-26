@@ -1,51 +1,17 @@
-import uvicorn
-from fastapi import FastAPI, HTTPException
-from starlette.status import HTTP_404_NOT_FOUND
-
-from etl.sql_queries import (
-    DatabaseConnector,
-    fetch_movie_ratings_from_db,
-    fetch_usernames_from_db,
-    fetch_movie_ratings_from_db_for_movie,
-)
-from schemas.movie import MovieRatingWithId
+from fastapi import FastAPI
+from starlette.middleware.cors import CORSMiddleware
+from api.routers import health_router, ratings_router
 
 app = FastAPI()
 
 
-@app.get("/health")
-async def get_healthcheck() -> dict[str, int]:
-    return {"status": 200}
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-
-@app.get("/readiness")
-async def get_readiness() -> dict[str, int]:
-    return {"status": 200}
-
-
-@app.get("/ratings/{movie_id}")
-async def get_ratings(
-    movie_id: int | None = None, limit: int = 100
-) -> list[MovieRatingWithId]:
-    async with DatabaseConnector() as conn:
-        movies = await fetch_movie_ratings_from_db_for_movie(conn, movie_id, limit)
-    return movies
-
-
-@app.get("/ratings/{user}")
-async def get_ratings_for_user(user: str) -> list[MovieRatingWithId]:
-    async with DatabaseConnector() as conn:
-        movies = await fetch_movie_ratings_from_db(conn)
-        users = await fetch_usernames_from_db(conn)
-    map_user_name_to_id = {user.username: user.id for user in users}
-    target_user_id = map_user_name_to_id.get(user)
-    if target_user_id is None:
-        raise HTTPException(
-            status_code=HTTP_404_NOT_FOUND, detail=f"User '{user}' not found."
-        )
-    movies = [movie for movie in movies if movie.user_id == target_user_id]
-    return movies
-
-
-if __name__ == "__main__":
-    uvicorn.run(app, host="localhost", port=8080)
+app.include_router(health_router, prefix="")
+app.include_router(ratings_router, prefix="/ratings")

@@ -9,6 +9,21 @@ services:
     ports:
      - "54320:5432"
 
+  test-api:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    environment:
+      - DB_HOST=test-db
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASS=postgres
+      - DB_NAME=test
+    ports:
+      - "8090:8080"
+    depends_on:
+      - test-db
+
   fake-site:
     image: "nginx:alpine"
     volumes:

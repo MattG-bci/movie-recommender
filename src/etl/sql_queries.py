@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 from typing import Any
 
-from schemas.movie import MovieRatingIn, Movie, MovieRatingWithId
+from schemas.movie import MovieRatingIn, Movie, MovieRatingWithId, MovieRating
 from schemas.users import UserIn, User
 from schemas.recommendation import UserProfile
 from settings import DBSettings
@@ -78,6 +78,28 @@ async def upsert_movie_ratings(
         table_name="movie_ratings",
         conflict_columns=["user_id", "movie_id"],
     )
+
+
+async def fetch_ratings(
+    conn: asyncpg.Connection, username: str | None, movie_name: str | None, limit: int
+) -> list[MovieRating]:
+    query = """
+    SELECT
+        u.username,
+        m.title as movie_name,
+        mr.rating
+    FROM movie_ratings mr
+    JOIN users u
+    ON u.id = mr.user_id
+    JOIN movies m
+    ON m.id = mr.movie_id
+    WHERE ($1::text IS NULL OR u.username = $1)
+    AND ($2::text IS NULL OR m.title = $2)
+    ORDER BY u.username, m.title
+    LIMIT $3::integer
+    """
+    rows = await conn.fetch(query, username, movie_name, limit)
+    return [MovieRating(**dict(row)) for row in rows]
 
 
 async def fetch_usernames_from_db(conn: asyncpg.Connection) -> list[User]:
