@@ -22,12 +22,14 @@ class MovieReranker(dspy.Module):
         exploration: float,
         user_profile: UserProfile,
         candidates: list[MovieCandidate],
+        image: dspy.Image | None = None,
     ):
         return self.rerank(
             request=request,
             exploration=exploration,
             user_profile=user_profile,
             candidates=candidates,
+            image=image,
         )
 
 

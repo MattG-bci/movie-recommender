@@ -17,55 +17,13 @@ from settings import LLMSettings, DBSettings
 from schemas.recommendation import RecommendationOut, MovieCandidate
 
 
-async def rerank(
-    user_id: int,
-    prompt: str,
-    exploration: float,
-    candidates: list[MovieCandidate],
-    k: int = 10,
-) -> list[RecommendationOut]:
-    async with DatabaseConnector() as conn:
-        user_profile = await fetch_user_profile(conn, user_id, top_k=k)
-
-    reranker = MovieReranker()
-    by_id = {c.movie.id: c for c in candidates}
-
-    configure_llm()
-    prediction = reranker(
-        request=prompt,
-        exploration=exploration,
-        user_profile=user_profile,
-        candidates=candidates,
-    )
-
-    results: list[RecommendationOut] = []
-    seen: set[int] = set()
-    for mid in prediction.ranked_ids:
-        if mid in by_id and mid not in seen:
-            results.append(
-                RecommendationOut(
-                    movie=by_id[mid].movie, reason=prediction.reasons.get(mid)
-                )
-            )
-            seen.add(mid)
-
-    for c in candidates:
-        if len(results) >= k:
-            break
-        if c.movie.id not in seen:
-            results.append(RecommendationOut(movie=c.movie, reason=None))
-            seen.add(c.movie.id)
-    return results[:k]
-
-
-def configure_llm() -> None:
-    settings = LLMSettings()
-    lm = dspy.LM(f"anthropic/{settings.MODEL}", api_key=settings.API_KEY)
-    dspy.configure(lm=lm)
-
-
 async def recommend_movies(
-    user_name: str, top_k: int, exploration: float, n_cf_candidates: int, prompt: str
+    user_name: str,
+    top_k: int,
+    exploration: float,
+    n_cf_candidates: int,
+    prompt: str,
+    image: dspy.Image | None = None,
 ) -> None:
     settings = DBSettings()
     async with DatabaseConnector(db_settings=settings) as conn:
@@ -98,8 +56,62 @@ async def recommend_movies(
 
     logger.info("Reranking...")
     reranked_recommendations = await rerank(
-        database_user_id, prompt, exploration, candidates=candidates, k=top_k
+        database_user_id,
+        prompt,
+        exploration,
+        candidates=candidates,
+        k=top_k,
+        image=image,
     )
     logger.info(
         f"Here is top {top_k} movie recommendations after reranking: {reranked_recommendations}"
     )
+
+
+async def rerank(
+    user_id: int,
+    prompt: str,
+    exploration: float,
+    candidates: list[MovieCandidate],
+    image: dspy.Image | None = None,
+    k: int = 10,
+) -> list[RecommendationOut]:
+    async with DatabaseConnector() as conn:
+        user_profile = await fetch_user_profile(conn, user_id, top_k=k)
+
+    reranker = MovieReranker()
+    by_id = {c.movie.id: c for c in candidates}
+
+    configure_llm()
+    prediction = reranker(
+        request=prompt,
+        exploration=exploration,
+        user_profile=user_profile,
+        candidates=candidates,
+        image=image,
+    )
+
+    results: list[RecommendationOut] = []
+    seen: set[int] = set()
+    for mid in prediction.ranked_ids:
+        if mid in by_id and mid not in seen:
+            results.append(
+                RecommendationOut(
+                    movie=by_id[mid].movie, reason=prediction.reasons.get(mid)
+                )
+            )
+            seen.add(mid)
+
+    for c in candidates:
+        if len(results) >= k:
+            break
+        if c.movie.id not in seen:
+            results.append(RecommendationOut(movie=c.movie, reason=None))
+            seen.add(c.movie.id)
+    return results[:k]
+
+
+def configure_llm() -> None:
+    settings = LLMSettings()
+    lm = dspy.LM(f"anthropic/{settings.MODEL}", api_key=settings.API_KEY)
+    dspy.configure(lm=lm)

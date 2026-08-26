@@ -49,6 +49,9 @@ class RerankMovies(dspy.Signature):
     candidates: list[MovieCandidate] = dspy.InputField(
         desc="Candidate movies with id, title, metadata, cf_score"
     )
+    image: dspy.Image | None = dspy.InputField(
+        desc="Image describing the mood, vibe and current state which is used for reranking movies to help find more suitable candidates"
+    )
 
     ranked_ids: list[int] = dspy.OutputField(desc="Candidate movie_ids, best first")
     reasons: dict[int, str] = dspy.OutputField(desc="movie_id -> one-sentence reason")
