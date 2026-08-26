@@ -1,32 +1,35 @@
 import logging
 from collections import defaultdict
+from typing import Literal
 
 import torch
-from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 
 
-class EvalMetrics(BaseModel):
-    mse: float
-    mape: float
+SupportedEvalMetrics = Literal["mse", "mape", "rmse"]
 
 
 def calculate_metrics(
-    predictions: list[torch.Tensor], targets: list[torch.Tensor]
-) -> EvalMetrics:
+    predictions: list[torch.Tensor],
+    targets: list[torch.Tensor],
+    metrics: list[SupportedEvalMetrics],
+) -> dict[SupportedEvalMetrics, float]:
     calculated_metrics = defaultdict(float)
-    for metric in EvalMetrics.model_fields.keys():
+    for metric in metrics:
         match metric:
             case "mse":
                 mse = calculate_mse(predictions, targets)
-                calculated_metrics["mse"] = mse
+                calculated_metrics[metric] = mse
             case "mape":
                 mape = calculate_mape(predictions, targets)
-                calculated_metrics["mape"] = mape
+                calculated_metrics[metric] = mape
+            case "rmse":
+                rmse = calculate_rmse(predictions, targets)
+                calculated_metrics[metric] = rmse
             case _:
                 raise KeyError("The requested metric has no implementation yet.")
-    return EvalMetrics(**calculated_metrics)
+    return calculated_metrics
 
 
 def calculate_mse(preds: list[torch.Tensor], targets: list[torch.Tensor]) -> float:
@@ -41,3 +44,10 @@ def calculate_mape(preds: list[torch.Tensor], targets: list[torch.Tensor]) -> fl
     targets_tensor = torch.tensor(targets).view(-1)
     mape = torch.mean((targets_tensor - preds_tensor).abs() / targets_tensor).item()
     return mape
+
+
+def calculate_rmse(preds: list[torch.Tensor], targets: list[torch.Tensor]) -> float:
+    preds_tensor = torch.tensor(preds).view(-1)
+    targets_tensor = torch.tensor(targets).view(-1)
+    mse = torch.sqrt(torch.mean((preds_tensor - targets_tensor) ** 2)).item()
+    return mse

@@ -23,7 +23,7 @@ FIXTURES_PATH = Path(__file__).parent / "fixtures" / "db"
 
 @pytest.fixture(scope="session")
 def docker_compose_file():
-    return "tests/docker-compose.yml"
+    return str(Path(__file__).parent / "docker-compose.yml")
 
 
 @pytest.fixture(scope="session")

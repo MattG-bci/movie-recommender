@@ -2,11 +2,10 @@ import dspy
 import torch
 from torch import nn
 import logging
-from typing import Any
 
 from schemas.modelling import ModelConfig, PATH_TO_MODEL_WEIGHTS
 from schemas.movie import Movie
-from schemas.recommendation import RerankMovies
+from schemas.recommendation import RerankMovies, UserProfile, MovieCandidate
 from schemas.users import User
 
 logger = logging.getLogger(__name__)
@@ -21,8 +20,8 @@ class MovieReranker(dspy.Module):
         self,
         request: str,
         exploration: float,
-        user_profile: dict[str, Any],
-        candidates: list[dict[str, Any]],
+        user_profile: UserProfile,
+        candidates: list[MovieCandidate],
     ):
         return self.rerank(
             request=request,

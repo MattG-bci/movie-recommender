@@ -28,26 +28,14 @@ async def rerank(
         user_profile = await fetch_user_profile(conn, user_id, top_k=k)
 
     reranker = MovieReranker()
-
-    candidate_payload = [
-        {
-            "movie_id": c.movie.id,
-            "title": c.movie.title,
-            "genres": c.movie.genres,
-            "director": c.movie.director,
-            "actors": c.movie.actors,
-            "cf_score": c.cf_score,
-        }
-        for c in candidates
-    ]
     by_id = {c.movie.id: c for c in candidates}
 
     configure_llm()
     prediction = reranker(
         request=prompt,
         exploration=exploration,
-        user_profile=user_profile.model_dump(),
-        candidates=candidate_payload,
+        user_profile=user_profile,
+        candidates=candidates,
     )
 
     results: list[RecommendationOut] = []

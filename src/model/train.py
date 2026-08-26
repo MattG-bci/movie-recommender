@@ -76,9 +76,11 @@ def train_movie_recommender(config: ModelTrainConfig) -> CFRecommender:
 
         logger.info("----Training Metrics----")
         metrics = calculate_metrics(
-            train_metrics["predictions"], train_metrics["targets"]
+            train_metrics["predictions"],
+            train_metrics["targets"],
+            metrics=["mse", "mape"],
         )
-        for metric in metrics.model_fields.keys():
+        for metric in metrics.keys():
             logger.info(f"Train {metric.upper()}: {getattr(metrics, metric):.3f}")
 
         logger.info("Starting validation...")
@@ -98,9 +100,11 @@ def train_movie_recommender(config: ModelTrainConfig) -> CFRecommender:
 
         logger.info("----Validation Metrics----")
         metrics = calculate_metrics(
-            validation_metrics["predictions"], validation_metrics["targets"]
+            validation_metrics["predictions"],
+            validation_metrics["targets"],
+            metrics=["mse", "mape"],
         )
-        for metric in metrics.model_fields.keys():
+        for metric in metrics.keys():
             logger.info(f"Validation {metric.upper()}: {getattr(metrics, metric):.3f}")
         logger.info("--------------------------")
     logger.info("Training complete.")

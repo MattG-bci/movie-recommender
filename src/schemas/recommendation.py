@@ -21,11 +21,6 @@ class UserProfile(BaseModel):
     top_movies: list[str]
 
 
-class UserProfileWithID(UserProfile):
-    user_id: int
-    username: str
-
-
 class MovieCandidate(BaseModel):
     movie: Movie
     cf_score: float
@@ -45,11 +40,13 @@ class RerankMovies(dspy.Signature):
     """
 
     request: str = dspy.InputField(desc="The user's free-text recommendation request")
-    exploration: float = dspy.InputField()
-    user_profile: dict = dspy.InputField(
+    exploration: confloat(strict=True, ge=0.0, le=1.0) = dspy.InputField(
+        desc="The rate defining whether reranked should stick to the user's taste profile (0.0) or promote novelty and unseen genres, directors etc. (1.0)"
+    )
+    user_profile: UserProfile = dspy.InputField(
         desc="User's top genres, actors, directors, movies"
     )
-    candidates: list[dict] = dspy.InputField(
+    candidates: list[MovieCandidate] = dspy.InputField(
         desc="Candidate movies with id, title, metadata, cf_score"
     )
 

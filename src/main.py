@@ -69,9 +69,9 @@ async def run_recommender_training(save_model: bool = True) -> None:
 async def run_movie_recommendation(
     user_name: str,
     top_k: int = 10,
-    exploration: float = 1.0,
-    n_cf_candidates: int = 40,
-    prompt: str = "I am with my friend and we want to watch something to kill off the time",
+    exploration: float = 0.3,
+    n_cf_candidates: int = 100,
+    prompt: str = "I am a bit lonely now. I need something light-hearted",
 ) -> None:
     await recommend_movies(
         user_name=user_name,
