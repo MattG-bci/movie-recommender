@@ -6,7 +6,7 @@ import torch
 from model.processing import (
     build_movie_candidates,
     get_model_id_to_recommender_id_mapping,
-    prepare_recommendation_mappings,
+    map_db_ids_to_recommender_ids,
 )
 from schemas.movie import Movie
 from schemas.users import User
@@ -76,35 +76,11 @@ def test_prepare_recommendation_mappings():
     movies = _make_movies()
     users = _make_users()
 
-    mapping, rec_user_id, db_user_id, movie_ids, n_users, n_movies = (
-        prepare_recommendation_mappings(movies, users, "alice")
-    )
+    user_ids, movie_ids = map_db_ids_to_recommender_ids(movies, users)
 
-    assert n_users == 2
-    assert n_movies == 2
     assert len(movie_ids) == 2
-    assert isinstance(mapping, dict)
-    assert isinstance(rec_user_id, int)
-
-
-def test_prepare_recommendation_mappings_reverse_mapping_is_consistent():
-    movies = _make_movies()
-    users = _make_users()
-
-    mapping, _, _, movie_ids, _, _ = prepare_recommendation_mappings(
-        movies, users, "alice"
-    )
-
-    assert set(mapping.values()) == {10, 20}
-    assert set(mapping.keys()) == set(movie_ids)
-
-
-def test_prepare_recommendation_mappings_raises_on_unknown_user():
-    movies = _make_movies()
-    users = _make_users()
-
-    with pytest.raises(KeyError, match="does not exist"):
-        prepare_recommendation_mappings(movies, users, "unknown_user")
+    assert user_ids == [0, 1]
+    assert movie_ids == [0, 1]
 
 
 def test_build_movie_candidates():

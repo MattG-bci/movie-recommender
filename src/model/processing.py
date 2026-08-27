@@ -6,38 +6,39 @@ from schemas.recommendation import MovieCandidate
 from schemas.users import User
 
 
-def prepare_recommendation_mappings(
-    movies: list[Movie], user_names: list[User], user_name: str
-) -> tuple[dict[int, int], int, int, list[int], int, int]:
+def map_db_ids_to_recommender_ids(
+    movies: list[Movie], users: list[User]
+) -> tuple[list[int], list[int]]:
     map_movie_id_to_recommender_id = get_model_id_to_recommender_id_mapping(
         movies, "id"
     )
-    map_user_id_to_recommender_id = get_model_id_to_recommender_id_mapping(
-        user_names, "id"
+    map_user_id_to_recommender_id = get_model_id_to_recommender_id_mapping(users, "id")
+    recommender_movie_ids = list(
+        {map_movie_id_to_recommender_id[movie.id] for movie in movies}
+    )
+    recommender_user_ids = list(
+        {map_user_id_to_recommender_id[user.id] for user in users}
+    )
+    return (
+        recommender_user_ids,
+        recommender_movie_ids,
+    )
+
+
+def map_recommender_movie_ids_to_db_ids(
+    movies: list[Movie], recommended_movie_ids: torch.Tensor
+) -> list[int]:
+    map_movie_id_to_recommender_id = get_model_id_to_recommender_id_mapping(
+        movies, "id"
     )
     map_recommender_id_to_movie_id = {
-        value: key for key, value in map_movie_id_to_recommender_id.items()
+        recommender_id: movie_id
+        for movie_id, recommender_id in map_movie_id_to_recommender_id.items()
     }
-
-    map_user_name_to_db_id = {user.username: user.id for user in user_names}
-
-    movie_ids = list({map_movie_id_to_recommender_id[movie.id] for movie in movies})
-    n_movies = len(movie_ids)
-    n_users = len({user.id for user in user_names})
-
-    database_user_id = map_user_name_to_db_id.get(user_name)
-    if database_user_id is None:
-        raise KeyError(f"User name {user_name} does not exist in the database")
-    recommender_user_id = map_user_id_to_recommender_id[database_user_id]
-
-    return (
-        map_recommender_id_to_movie_id,
-        recommender_user_id,
-        database_user_id,
-        movie_ids,
-        n_users,
-        n_movies,
-    )
+    return [
+        map_recommender_id_to_movie_id.get(int(recommended_movie_id))
+        for recommended_movie_id in recommended_movie_ids
+    ]
 
 
 def build_movie_candidates(

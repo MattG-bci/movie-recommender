@@ -6,79 +6,98 @@ from etl.sql_queries import (
     fetch_movies_from_db,
     fetch_usernames_from_db,
 )
-from model.processing import prepare_recommendation_mappings, build_movie_candidates
+from model.processing import (
+    map_db_ids_to_recommender_ids,
+    build_movie_candidates,
+    map_recommender_movie_ids_to_db_ids,
+)
 from model.recommender import (
     MovieReranker,
     logger,
     load_cf_recommender,
     get_cf_recommendations,
 )
+from schemas.movie import Movie
+from schemas.users import User
 from settings import LLMSettings, DBSettings
-from schemas.recommendation import RecommendationOut, MovieCandidate
+from schemas.recommendation import (
+    RecommendationOut,
+    MovieCandidate,
+    RecommendationInput,
+    UserProfile,
+)
 
 
 async def recommend_movies(
-    user_name: str,
-    top_k: int,
-    exploration: float,
-    n_cf_candidates: int,
-    prompt: str,
-    image: dspy.Image | None = None,
-) -> None:
+    recommendation_input: RecommendationInput,
+) -> list[RecommendationOut]:
+    logger.info("Fetch data from db...")
     settings = DBSettings()
-    async with DatabaseConnector(db_settings=settings) as conn:
-        movies = await fetch_movies_from_db(conn)
-        user_names = await fetch_usernames_from_db(conn)
-
-    logger.info("Prepare data...")
-    (
-        map_recommender_id_to_movie_id,
-        recommender_user_id,
-        database_user_id,
-        movie_ids,
-        n_users,
-        n_movies,
-    ) = prepare_recommendation_mappings(movies, user_names, user_name)
-
-    logger.info("Loading base recommendation model...")
-    model = load_cf_recommender(n_users, n_movies)
-
-    logger.info("Getting base recommendations...")
-    recommended_movie_ids, cf_scores = get_cf_recommendations(
-        model,
-        recommender_user_id,
-        movie_ids,
-        map_recommender_id_to_movie_id,
-        n_cf_candidates,
+    movies, users, user_profile = await load_data_from_db_for_recommendation(
+        recommendation_input.username, settings
     )
 
+    logger.info("Prepare data...")
+    user = list(
+        filter(lambda user: user.username == recommendation_input.username, users)
+    )
+    (
+        recommender_user_ids,
+        recommender_movie_ids,
+    ) = map_db_ids_to_recommender_ids(movies, user)
+
+    logger.info("Loading base recommendation model...")
+    n_users = len(users)
+    n_movies = len(movies)
+    model = load_cf_recommender(n_users, n_movies)
+
+    logger.info("Getting base cf recommendations...")
+    recommended_movie_ids, cf_scores = get_cf_recommendations(
+        model,
+        recommender_user_ids,
+        recommender_movie_ids,
+        recommendation_input.n_cf_recommendations,
+    )
+
+    recommended_movie_ids = map_recommender_movie_ids_to_db_ids(
+        movies, recommended_movie_ids
+    )
     candidates = build_movie_candidates(recommended_movie_ids, cf_scores, movies)
 
     logger.info("Reranking...")
-    reranked_recommendations = await rerank(
-        database_user_id,
-        prompt,
-        exploration,
+    reranked_recommendations = await rerank_candidates(
+        user_profile=user_profile,
+        prompt=recommendation_input.prompt,
+        exploration=recommendation_input.exploration,
         candidates=candidates,
-        k=top_k,
-        image=image,
+        k=recommendation_input.top_k_recommendations,
+        image=recommendation_input.image,
     )
-    logger.info(
-        f"Here is top {top_k} movie recommendations after reranking: {reranked_recommendations}"
-    )
+    return reranked_recommendations
 
 
-async def rerank(
-    user_id: int,
+async def load_data_from_db_for_recommendation(
+    username: str, settings: DBSettings
+) -> tuple[list[Movie], list[User], UserProfile]:
+    async with DatabaseConnector(db_settings=settings) as conn:
+        movies = await fetch_movies_from_db(conn)
+
+    async with DatabaseConnector(db_settings=settings) as conn:
+        users = await fetch_usernames_from_db(conn)
+
+    async with DatabaseConnector() as conn:
+        user_profile = await fetch_user_profile(conn, username)
+    return movies, users, user_profile
+
+
+async def rerank_candidates(
+    user_profile: UserProfile,
     prompt: str,
     exploration: float,
     candidates: list[MovieCandidate],
     image: dspy.Image | None = None,
     k: int = 10,
 ) -> list[RecommendationOut]:
-    async with DatabaseConnector() as conn:
-        user_profile = await fetch_user_profile(conn, user_id, top_k=k)
-
     reranker = MovieReranker()
     by_id = {c.movie.id: c for c in candidates}
 

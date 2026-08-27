@@ -135,7 +135,7 @@ async def fetch_movie_ratings_from_db_for_movie(
 
 
 async def fetch_user_profile(
-    conn: asyncpg.Connection, user_id: int, top_k: int = 5
+    conn: asyncpg.Connection, username: str, top_k: int = 10
 ) -> UserProfile:
     query = """
 
@@ -146,7 +146,7 @@ async def fetch_user_profile(
         FROM users u
         JOIN movie_ratings mv_rat ON u.id = mv_rat.user_id
         JOIN movies mv ON mv.id = mv_rat.movie_id
-        WHERE u.id = $1
+        WHERE u.username = $1
         GROUP BY actor
         ORDER BY average_rating DESC
         LIMIT $2
@@ -170,7 +170,7 @@ async def fetch_user_profile(
         FROM users u
         JOIN movie_ratings mv_rat ON u.id = mv_rat.user_id
         JOIN movies mv ON mv.id = mv_rat.movie_id
-        WHERE u.id = $1
+        WHERE u.username = $1
         GROUP BY director
         ORDER BY average_rating DESC
         LIMIT $2
@@ -184,7 +184,7 @@ async def fetch_user_profile(
         FROM users u
         JOIN movie_ratings mv_rat ON u.id = mv_rat.user_id
         JOIN movies mv ON mv.id = mv_rat.movie_id
-        WHERE u.id = $1
+        WHERE u.username = $1
         ORDER BY mv_rat.rating DESC
         LIMIT $2
     )
@@ -197,11 +197,11 @@ async def fetch_user_profile(
         (SELECT ARRAY_AGG(title ORDER BY rating DESC) FROM top_movies) AS top_movies;
     """
 
-    row = await conn.fetchrow(query, user_id, top_k)
+    row = await conn.fetchrow(query, username, top_k)
     missing = [key for key, value in row.items() if value is None]
     if len(missing) > 0:
         raise ValueError(
-            f"Profile for user_id={user_id} has null fields: {" ".join(missing)}"
+            f"Profile for username={username} has null fields: {" ".join(missing)}"
         )
     return UserProfile(**row)
 

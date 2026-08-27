@@ -11,6 +11,7 @@ from model.train import train_recommender
 from model.llm_rerank import recommend_movies
 
 from schemas.modelling import PATH_TO_MODEL_WEIGHTS
+from schemas.recommendation import RecommendationInput
 
 logging.basicConfig(
     level=logging.INFO,
@@ -68,21 +69,18 @@ async def run_recommender_training(save_model: bool = True) -> None:
 @app.command()
 @async_typer_command
 async def run_movie_recommendation(
-    user_name: str,
+    username: str,
     img_path: str | None,
-    top_k: int = 10,
     exploration: float = 0.3,
-    n_cf_candidates: int = 100,
     prompt: str = "I am a bit lonely now. I need something light-hearted",
 ) -> None:
-    img = dspy.Image(img_path) if img_path else None
-    await recommend_movies(
-        user_name=user_name,
-        top_k=top_k,
-        exploration=exploration,
-        n_cf_candidates=n_cf_candidates,
-        prompt=prompt,
-        image=img,
+    image = dspy.Image(img_path) if img_path else None
+    recommendation_input = RecommendationInput(
+        username=username, image=image, prompt=prompt, exploration=exploration
+    )
+    recommended_movies = await recommend_movies(recommendation_input)
+    logger.info(
+        f"Here is top {recommendation_input.top_k_recommendations} movie recommendations after reranking: {recommended_movies}"
     )
 
 

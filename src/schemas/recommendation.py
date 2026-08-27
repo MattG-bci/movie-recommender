@@ -4,9 +4,13 @@ import dspy
 from schemas.movie import Movie
 
 
-class RecommendationPrompt(BaseModel):
+class RecommendationInput(BaseModel):
+    username: str
     prompt: str
+    image: dspy.Image | None = None
     exploration: confloat(strict=True, ge=0.0, le=1.0)
+    n_cf_recommendations: int = 100
+    top_k_recommendations: int = 10
 
 
 class RecommendationOut(BaseModel):
