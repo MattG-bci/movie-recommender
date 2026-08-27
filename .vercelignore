@@ -1,6 +1,0 @@
-.git
-models/
-tests/
-sqitch/
-*.parquet
-*.pth

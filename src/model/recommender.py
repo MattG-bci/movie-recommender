@@ -2,11 +2,15 @@ import dspy
 import torch
 from torch import nn
 import logging
-from typing import Any
 
 from schemas.modelling import ModelConfig, PATH_TO_MODEL_WEIGHTS
 from schemas.movie import Movie
-from schemas.recommendation import RerankMovies
+from schemas.recommendation import (
+    RerankMovies,
+    UserProfile,
+    MovieCandidate,
+    ExtractImageSemantics,
+)
 from schemas.users import User
 
 logger = logging.getLogger(__name__)
@@ -15,20 +19,24 @@ logger = logging.getLogger(__name__)
 class MovieReranker(dspy.Module):
     def __init__(self):
         super().__init__()
+        self.process_vision = dspy.ChainOfThought(ExtractImageSemantics)
         self.rerank = dspy.ChainOfThought(RerankMovies)
 
     def forward(
         self,
         request: str,
         exploration: float,
-        user_profile: dict[str, Any],
-        candidates: list[dict[str, Any]],
+        user_profile: UserProfile,
+        candidates: list[MovieCandidate],
+        image: dspy.Image | None = None,
     ):
+        image_semantics = self.process_vision(image=image) if image else None
         return self.rerank(
             request=request,
             exploration=exploration,
             user_profile=user_profile,
             candidates=candidates,
+            image_semantics=image_semantics.output,
         )
 
 

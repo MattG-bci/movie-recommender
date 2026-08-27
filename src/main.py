@@ -1,3 +1,4 @@
+import dspy
 import typer
 
 from etl.ingestion import ingest_movies, ingest_usernames, ingest_movie_ratings
@@ -68,17 +69,20 @@ async def run_recommender_training(save_model: bool = True) -> None:
 @async_typer_command
 async def run_movie_recommendation(
     user_name: str,
+    img_path: str | None,
     top_k: int = 10,
-    exploration: float = 1.0,
-    n_cf_candidates: int = 40,
-    prompt: str = "I am with my friend and we want to watch something to kill off the time",
+    exploration: float = 0.3,
+    n_cf_candidates: int = 100,
+    prompt: str = "I am a bit lonely now. I need something light-hearted",
 ) -> None:
+    img = dspy.Image(img_path) if img_path else None
     await recommend_movies(
         user_name=user_name,
         top_k=top_k,
         exploration=exploration,
         n_cf_candidates=n_cf_candidates,
         prompt=prompt,
+        image=img,
     )
 
 
