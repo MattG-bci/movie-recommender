@@ -158,7 +158,7 @@ async def fetch_user_profile(
         FROM users u
         JOIN movie_ratings mv_rat ON u.id = mv_rat.user_id
         JOIN movies mv ON mv.id = mv_rat.movie_id
-        WHERE u.id = $1
+        WHERE u.username = $1
         GROUP BY genre
         ORDER BY average_rating DESC
         LIMIT $2

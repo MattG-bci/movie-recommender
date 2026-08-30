@@ -6,23 +6,22 @@ from schemas.recommendation import MovieCandidate
 from schemas.users import User
 
 
-def map_db_ids_to_recommender_ids(
-    movies: list[Movie], users: list[User]
-) -> tuple[list[int], list[int]]:
+def prepare_ids_for_recommendation(
+    movies: list[Movie], users: list[User], username: str
+) -> tuple[list[int], list[int], int]:
     map_movie_id_to_recommender_id = get_model_id_to_recommender_id_mapping(
         movies, "id"
     )
     map_user_id_to_recommender_id = get_model_id_to_recommender_id_mapping(users, "id")
-    recommender_movie_ids = list(
-        {map_movie_id_to_recommender_id[movie.id] for movie in movies}
-    )
-    recommender_user_ids = list(
-        {map_user_id_to_recommender_id[user.id] for user in users}
-    )
-    return (
-        recommender_user_ids,
-        recommender_movie_ids,
-    )
+
+    recommender_movie_ids = [
+        map_movie_id_to_recommender_id[movie.id] for movie in movies
+    ]
+    recommender_user_ids = [map_user_id_to_recommender_id[user.id] for user in users]
+    target_user = list(filter(lambda x: x.username == username, users))[0]
+    target_user_id = map_user_id_to_recommender_id[target_user.id]
+
+    return (recommender_movie_ids, recommender_user_ids, target_user_id)
 
 
 def map_recommender_movie_ids_to_db_ids(

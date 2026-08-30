@@ -118,7 +118,7 @@ def load_cf_recommender(n_users: int, n_movies: int) -> CFRecommender:
 
 def get_cf_recommendations(
     model: CFRecommender,
-    recommender_user_id: list[int],
+    recommender_user_id: int,
     movie_ids: list[int],
     n_cf_candidates: int,
 ) -> tuple[torch.Tensor, torch.Tensor]:

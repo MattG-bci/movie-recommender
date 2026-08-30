@@ -6,7 +6,7 @@ import torch
 from model.processing import (
     build_movie_candidates,
     get_model_id_to_recommender_id_mapping,
-    map_db_ids_to_recommender_ids,
+    prepare_ids_for_recommendation,
 )
 from schemas.movie import Movie
 from schemas.users import User
@@ -72,12 +72,16 @@ def test_get_model_id_to_recommender_id_mapping_empty_list():
     assert result == {}
 
 
-def test_prepare_recommendation_mappings():
+def test_prepare_ids_for_recommendation():
     movies = _make_movies()
     users = _make_users()
+    target_username = "alice"
 
-    user_ids, movie_ids = map_db_ids_to_recommender_ids(movies, users)
+    user_ids, movie_ids, target_user_id = prepare_ids_for_recommendation(
+        movies, users, target_username
+    )
 
+    assert target_user_id == 0
     assert len(movie_ids) == 2
     assert user_ids == [0, 1]
     assert movie_ids == [0, 1]

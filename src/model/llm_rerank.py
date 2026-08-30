@@ -7,7 +7,7 @@ from etl.sql_queries import (
     fetch_usernames_from_db,
 )
 from model.processing import (
-    map_db_ids_to_recommender_ids,
+    prepare_ids_for_recommendation,
     build_movie_candidates,
     map_recommender_movie_ids_to_db_ids,
 )
@@ -38,13 +38,9 @@ async def recommend_movies(
     )
 
     logger.info("Prepare data...")
-    user = list(
-        filter(lambda user: user.username == recommendation_input.username, users)
+    (recommender_movie_ids, recommender_user_ids, target_user_id) = (
+        prepare_ids_for_recommendation(movies, users, recommendation_input.username)
     )
-    (
-        recommender_user_ids,
-        recommender_movie_ids,
-    ) = map_db_ids_to_recommender_ids(movies, user)
 
     logger.info("Loading base recommendation model...")
     n_users = len(users)
@@ -54,7 +50,7 @@ async def recommend_movies(
     logger.info("Getting base cf recommendations...")
     recommended_movie_ids, cf_scores = get_cf_recommendations(
         model,
-        recommender_user_ids,
+        target_user_id,
         recommender_movie_ids,
         recommendation_input.n_cf_recommendations,
     )
@@ -85,7 +81,7 @@ async def load_data_from_db_for_recommendation(
     async with DatabaseConnector(db_settings=settings) as conn:
         users = await fetch_usernames_from_db(conn)
 
-    async with DatabaseConnector() as conn:
+    async with DatabaseConnector(db_settings=settings) as conn:
         user_profile = await fetch_user_profile(conn, username)
     return movies, users, user_profile
 
