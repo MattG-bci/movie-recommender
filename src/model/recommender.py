@@ -120,17 +120,11 @@ def get_cf_recommendations(
     model: CFRecommender,
     recommender_user_id: int,
     movie_ids: list[int],
-    map_recommender_id_to_movie_id: dict[int, int],
     n_cf_candidates: int,
-) -> tuple[list[int], torch.Tensor]:
+) -> tuple[torch.Tensor, torch.Tensor]:
     user_id_tensor = torch.tensor([recommender_user_id]).to(torch.device("cpu"))
     movie_id_tensor = torch.tensor(movie_ids).to(torch.device("cpu"))
     recommendations, cf_scores = model.get_top_k_recommendations(
         user_id_tensor, movie_id_tensor, k=n_cf_candidates
     )
-
-    recommended_movie_ids = [
-        map_recommender_id_to_movie_id.get(int(recommended_movie_id))
-        for recommended_movie_id in recommendations
-    ]
-    return recommended_movie_ids, cf_scores
+    return recommendations, cf_scores
