@@ -28,6 +28,7 @@ packages = [
     {include = "schemas", from = "src"},
     {include = "settings.py", from = "src"},
 ]
+package-mode = true
 
 [tool.poetry.dependencies]
 python = ">=3.12,<3.15"
