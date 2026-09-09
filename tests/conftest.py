@@ -20,6 +20,8 @@ from settings import DBSettings
 
 SQITCH_PATH = Path(__file__).parents[1] / "sqitch"
 FIXTURES_PATH = Path(__file__).parent / "fixtures" / "db"
+# N workers for parallel testing with xdist
+N_WORKERS = 4
 
 
 @pytest.fixture(scope="session")
@@ -38,10 +40,22 @@ def docker_compose_project_name():
 
 
 @pytest.fixture(scope="session")
+def docker_setup():
+    return "up --build --wait"
+
+
+@pytest.fixture(scope="session")
+def docker_cleanup():
+    return "down -v"
+
+
+@pytest.fixture(scope="session")
 def docker_services(
     docker_compose_command,
     docker_compose_file,
     docker_compose_project_name,
+    docker_setup,
+    docker_cleanup,
     tmp_path_factory,
 ):
     docker_compose = DockerComposeExecutor(
@@ -51,14 +65,23 @@ def docker_services(
     # first worker tears down old containers and brings up new ones.
     root_tmp = tmp_path_factory.getbasetemp().parent
     lock_file = root_tmp / "docker.lock"
-    flag_file = root_tmp / "docker.flag"
+    setup_flag_file = root_tmp / "docker.flag"
+    teardown_flag_file = root_tmp / "docker_teardown.flag"
 
     with FileLock(str(lock_file)):
-        if not flag_file.exists():
-            docker_compose.execute("down -v")
-            docker_compose.execute("up --build -d")
-            flag_file.write_text("started")
-    yield Services(docker_compose)
+        if not setup_flag_file.exists():
+            docker_compose.execute(docker_setup)
+            setup_flag_file.write_text("started")
+
+        yield Services(docker_compose)
+
+        finished = (
+            int(teardown_flag_file.read_text()) if teardown_flag_file.exists() else 0
+        )
+        finished += 1
+        teardown_flag_file.write_text(str(finished))
+        if finished >= N_WORKERS:
+            docker_compose.execute(docker_cleanup)
 
 
 def is_site_responsive(url: str) -> bool:
