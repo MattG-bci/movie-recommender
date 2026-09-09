@@ -10,6 +10,7 @@ REVERT_DB_NAME = "test_revert"
 
 @pytest.mark.asyncio
 async def test_db_connection(db_service):
+    conn = None
     try:
         conn = await asyncpg.connection.connect(
             user=db_service.USER,
@@ -21,7 +22,8 @@ async def test_db_connection(db_service):
         )
         assert conn is not None
     finally:
-        await conn.close()
+        if conn is not None:
+            await conn.close()
 
 
 @pytest.mark.asyncio

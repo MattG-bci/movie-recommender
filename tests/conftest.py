@@ -214,8 +214,6 @@ def setup_test_db(settings: DBSettings):
 
 
 def load_fixtures(settings: DBSettings):
-    NAMESPACE = uuid.uuid5(uuid.NAMESPACE_DNS, "movie-recommender")
-
     # Order of the tables matters here
     fixtures = [
         ("users", ["id", "username"]),
@@ -235,21 +233,21 @@ def load_fixtures(settings: DBSettings):
 
         for row in data:
             if table == "users":
-                row["id_uuid"] = str(uuid.uuid5(NAMESPACE, f"users:{row['username']}"))
+                row["id_uuid"] = str(uuid.uuid5(uuid.NAMESPACE_DNS, row["username"]))
                 user_uuids[row["id"]] = row["id_uuid"]
             elif table == "movies":
                 row["id_uuid"] = str(
                     uuid.uuid5(
-                        NAMESPACE,
-                        f"movies:{row['title']}:{row['release_year']}:{row['director']}",
+                        uuid.NAMESPACE_DNS,
+                        row["title"] + row["release_year"] + row["director"],
                     )
                 )
                 movie_uuids[row["id"]] = row["id_uuid"]
             elif table == "movie_ratings":
                 row["id_uuid"] = str(
                     uuid.uuid5(
-                        NAMESPACE,
-                        f"movie_ratings:{user_uuids[row['user_id']]}:{movie_uuids[row['movie_id']]}",
+                        uuid.NAMESPACE_DNS,
+                        user_uuids[row["user_id"]] + movie_uuids[row["movie_id"]],
                     )
                 )
 
