@@ -12,4 +12,6 @@ DROP COLUMN id_uuid;
 ALTER TABLE movie_ratings
 DROP COLUMN id_uuid;
 
+DROP EXTENSION IF EXISTS "uuid-ossp";
+
 COMMIT;
