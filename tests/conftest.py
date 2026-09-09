@@ -1,5 +1,6 @@
 import csv
 import subprocess
+import uuid
 from pathlib import Path
 
 
@@ -223,12 +224,36 @@ def load_fixtures(settings: DBSettings):
         ("movie_ratings", ["id", "user_id", "movie_id", "rating"]),
     ]
 
+    user_uuids = {}
+    movie_uuids = {}
+
     for table, columns in fixtures:
         with open(FIXTURES_PATH / f"{table}.csv") as f:
             data = list(csv.DictReader(f))
 
-        values = ", ".join(f"%({col})s" for col in columns)
-        cols = ", ".join(columns)
+        for row in data:
+            if table == "users":
+                row["id_uuid"] = str(uuid.uuid5(uuid.NAMESPACE_DNS, row["username"]))
+                user_uuids[row["id"]] = row["id_uuid"]
+            elif table == "movies":
+                row["id_uuid"] = str(
+                    uuid.uuid5(
+                        uuid.NAMESPACE_DNS,
+                        row["title"] + row["release_year"] + row["director"],
+                    )
+                )
+                movie_uuids[row["id"]] = row["id_uuid"]
+            elif table == "movie_ratings":
+                row["id_uuid"] = str(
+                    uuid.uuid5(
+                        uuid.NAMESPACE_DNS,
+                        user_uuids[row["user_id"]] + movie_uuids[row["movie_id"]],
+                    )
+                )
+
+        all_columns = columns + ["id_uuid"]
+        cols = ", ".join(all_columns)
+        values = ", ".join(f"%({col})s" for col in all_columns)
         query = f"INSERT INTO {table} ({cols}) VALUES ({values})"
 
         with DatabaseConnector(db_settings=settings) as conn:

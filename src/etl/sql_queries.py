@@ -103,7 +103,7 @@ async def fetch_ratings(
 
 
 async def fetch_usernames_from_db(conn: asyncpg.Connection) -> list[User]:
-    query = "SELECT * FROM users"
+    query = "SELECT id, username, created_at, updated_at FROM users"
     rows = await conn.fetch(query)
     return [User(**dict(row)) for row in rows]
 

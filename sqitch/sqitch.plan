@@ -6,3 +6,4 @@
 11102025_add_genre_column_to_movies 2025-10-11T22:21:38Z Matt <root@Mateuszs-MBP.mynet> # Add genre column
 19102025_create_extra_columns_to_movies_table 2025-10-19T21:26:02Z Matt <root@Mateuszs-MBP.mynet> # Add columns to movies table
 21102025_add_constraints 2025-10-21T20:23:21Z Matt <root@Mateuszs-MBP.mynet> # Add constraints to tables
+03092026_add_uuid_columns 2026-09-03T17:53:57Z Matt <root@Mateuszs-MacBook-Pro.local> # Add UUID columns for idenitifiers

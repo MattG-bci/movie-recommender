@@ -10,16 +10,20 @@ REVERT_DB_NAME = "test_revert"
 
 @pytest.mark.asyncio
 async def test_db_connection(db_service):
-    conn = await asyncpg.connection.connect(
-        user=db_service.USER,
-        password=db_service.PASS,
-        database=db_service.NAME,
-        host=db_service.HOST,
-        port=db_service.PORT,
-        timeout=5,
-    )
-    assert conn is not None
-    await conn.close()
+    conn = None
+    try:
+        conn = await asyncpg.connection.connect(
+            user=db_service.USER,
+            password=db_service.PASS,
+            database=db_service.NAME,
+            host=db_service.HOST,
+            port=db_service.PORT,
+            timeout=5,
+        )
+        assert conn is not None
+    finally:
+        if conn is not None:
+            await conn.close()
 
 
 @pytest.mark.asyncio
