@@ -1,13 +1,13 @@
 import logging
 import time
 from pathlib import Path
-
+import os
 import requests
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
 
-BASE_URL = "https://letterboxd.com"
+BASE_URL = os.getenv("BASE_URL")
 FIXTURES_DIR = Path(__file__).resolve().parent.parent / "fixtures" / "html"
 
 HEADERS = {
