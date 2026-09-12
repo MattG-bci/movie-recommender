@@ -2,6 +2,46 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Git conventions
+
+Do not append a `Claude-Session:` trailer (or any session URL) to commit messages or PR descriptions in this repo.
+
+## File structure
+
+```
+movie-recommender/
+├── .circleci/
+├── .github/
+│   └── workflows/
+├── dags/
+├── models/
+├── sqitch/
+├── src/
+│   ├── api/
+│   │   └── routers/
+│   ├── etl/
+│   │   └── generation/
+│   ├── model/
+│   ├── schemas/
+│   └── utils/
+├── tests/
+│   ├── fixtures/
+│   ├── test_api/
+│   │   └── test_routers/
+│   ├── test_etl/
+│   ├── test_model/
+│   └── test_scraper/
+├── .env_template
+├── .gitattributes
+├── .pre-commit-config.yaml
+├── CLAUDE.md
+├── Dockerfile
+├── README.md
+├── justfile
+├── poetry.lock
+└── pyproject.toml
+```
+
 ## Project overview
 
 A movie recommender system: scrapes user/movie/rating data, stores it in Postgres, trains a
