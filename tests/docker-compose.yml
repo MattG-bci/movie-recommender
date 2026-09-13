@@ -19,6 +19,7 @@ services:
       - DB_USER=postgres
       - DB_PASS=postgres
       - DB_NAME=test
+      - OMDB_API_KEY=${OMDB_API_KEY:-}
     ports:
       - "8090:8080"
     depends_on:
