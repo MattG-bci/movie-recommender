@@ -20,6 +20,17 @@ class Movie(BaseModel):
     actors: list[str]
 
 
+class MovieOut(Movie):
+    poster_url: str | None = None
+
+
+class MoviePage(BaseModel):
+    items: list[MovieOut]
+    total: int
+    limit: int
+    offset: int
+
+
 class MovieRating(BaseModel):
     username: str
     movie_name: str

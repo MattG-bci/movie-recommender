@@ -116,6 +116,55 @@ async def fetch_movies_from_db(conn: asyncpg.Connection) -> list[Movie]:
     return [Movie(**dict(row)) for row in rows]
 
 
+async def fetch_movies_page(
+    conn: asyncpg.Connection,
+    limit: int = 50,
+    offset: int = 0,
+    search: str | None = None,
+) -> list[Movie]:
+    query = """
+    SELECT id, title, release_year, genres, director, country, actors
+    FROM movies
+    WHERE ($3::text IS NULL OR title ILIKE '%' || $3 || '%')
+    ORDER BY title ASC, id ASC
+    LIMIT $1 OFFSET $2
+    """
+    rows = await conn.fetch(query, limit, offset, search)
+    return [Movie(**dict(row)) for row in rows]
+
+
+async def fetch_movie_by_id(conn: asyncpg.Connection, movie_id: int) -> Movie | None:
+    query = """
+    SELECT id, title, release_year, genres, director, country, actors
+    FROM movies
+    WHERE id = $1
+    """
+    row = await conn.fetchrow(query, movie_id)
+    if row is None:
+        return None
+    return Movie(**dict(row))
+
+
+async def count_movies(conn: asyncpg.Connection, search: str | None = None) -> int:
+    query = """
+    SELECT COUNT(*) AS count
+    FROM movies
+    WHERE ($1::text IS NULL OR title ILIKE '%' || $1 || '%')
+    """
+    row = await conn.fetchrow(query, search)
+    return row["count"]
+
+
+async def fetch_user_by_username(
+    conn: asyncpg.Connection, username: str
+) -> User | None:
+    query = "SELECT id, username, created_at, updated_at FROM users WHERE username = $1"
+    row = await conn.fetchrow(query, username)
+    if row is None:
+        return None
+    return User(**dict(row))
+
+
 async def fetch_movie_ratings_from_db(
     conn: asyncpg.Connection,
 ) -> list[MovieRatingWithId]:
@@ -201,7 +250,7 @@ async def fetch_user_profile(
     missing = [key for key, value in row.items() if value is None]
     if len(missing) > 0:
         raise ValueError(
-            f"Profile for username={username} has null fields: {" ".join(missing)}"
+            f"Profile for username={username} has null fields: {' '.join(missing)}"
         )
     return UserProfile(**row)
 

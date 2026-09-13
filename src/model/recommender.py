@@ -30,13 +30,13 @@ class MovieReranker(dspy.Module):
         candidates: list[MovieCandidate],
         image: dspy.Image | None = None,
     ):
-        image_semantics = self.process_vision(image=image) if image else None
+        image_semantics = self.process_vision(image=image).output if image else None
         return self.rerank(
             request=request,
             exploration=exploration,
             user_profile=user_profile,
             candidates=candidates,
-            image_semantics=image_semantics.output,
+            image_semantics=image_semantics,
         )
 
 
