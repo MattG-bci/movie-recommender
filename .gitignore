@@ -119,6 +119,7 @@ ipython_config.py
 # PEP 582; used by e.g. github.com/David-OConnor/pyflow and github.com/pdm-project/pdm
 __pypackages__/
 
+poster_cache.json
 # Celery stuff
 celerybeat-schedule
 celerybeat.pid
@@ -165,3 +166,8 @@ cython_debug/
 #  and can be added to the global gitignore or merged into this file.  For a more nuclear
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
+
+# Flutter app source (root "lib/" rule above targets Python build artifacts)
+!mobile/lib/
+mobile/build/
+mobile/.dart_tool/
