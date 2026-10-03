@@ -18,3 +18,6 @@ pipeline *ARGS:
 
 api:
     uv run uvicorn api.app:app --reload
+
+test-mobile:
+    cd mobile && flutter test
