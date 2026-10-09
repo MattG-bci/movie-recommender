@@ -1,7 +1,7 @@
-from pydantic import BaseModel, confloat
+from pydantic import BaseModel, Field, confloat
 
 import dspy
-from schemas.movie import Movie
+from schemas.movie import Movie, MovieOut
 
 
 class RecommendationInput(BaseModel):
@@ -16,6 +16,21 @@ class RecommendationInput(BaseModel):
 class RecommendationOut(BaseModel):
     movie: Movie
     reason: str | None
+    match_score: float | None = None
+
+
+class RecommendationRequest(BaseModel):
+    username: str
+    prompt: str
+    exploration: float = Field(0.3, ge=0.0, le=1.0)
+    image_base64: str | None = None
+    top_k: int = Field(10, ge=1, le=25)
+
+
+class RecommendationItem(BaseModel):
+    movie: MovieOut
+    reason: str | None
+    match_score: float | None
 
 
 class UserProfile(BaseModel):

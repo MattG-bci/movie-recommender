@@ -49,3 +49,18 @@ class LLMSettings(BaseSettings):
         env_file=Path(__file__).parents[1] / ".env",
         extra="ignore",
     )
+
+
+class OMDbSettings(BaseSettings):
+    API_KEY: str | None = None
+    BASE_URL: str = "https://www.omdbapi.com/"
+    TIMEOUT_SECONDS: float = 3.0
+    MAX_CONCURRENCY: int = 8
+    DAILY_BUDGET: int = 900
+    CACHE_PATH: Path = Path("poster_cache.json")
+
+    model_config = SettingsConfigDict(
+        env_prefix="OMDB_",
+        env_file=Path(__file__).parents[1] / ".env",
+        extra="ignore",
+    )

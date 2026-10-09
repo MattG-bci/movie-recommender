@@ -1,6 +1,12 @@
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
-from api.routers import health_router, ratings_router
+from api.routers import (
+    health_router,
+    ratings_router,
+    movies_router,
+    users_router,
+    recommendations_router,
+)
 
 app = FastAPI()
 
@@ -15,3 +21,6 @@ app.add_middleware(
 
 app.include_router(health_router, prefix="")
 app.include_router(ratings_router, prefix="/ratings")
+app.include_router(movies_router, prefix="/movies")
+app.include_router(users_router, prefix="/users")
+app.include_router(recommendations_router, prefix="/recommendations")

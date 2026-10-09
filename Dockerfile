@@ -4,6 +4,7 @@ WORKDIR /app
 
 COPY . .
 
+RUN pip install --no-cache-dir torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
 RUN pip install --no-cache-dir .
 
 EXPOSE 8080

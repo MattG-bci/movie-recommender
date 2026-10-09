@@ -1,3 +1,5 @@
+from functools import lru_cache
+
 import dspy
 
 from etl.sql_queries import (
@@ -97,36 +99,44 @@ async def rerank_candidates(
     reranker = MovieReranker()
     by_id = {c.movie.id: c for c in candidates}
 
-    configure_llm()
-    prediction = reranker(
-        request=prompt,
-        exploration=exploration,
-        user_profile=user_profile,
-        candidates=candidates,
-        image=image,
-    )
+    # dspy.configure() pins the global LM to the asyncio task that first calls
+    # it, so a per-request call blows up under uvicorn (each request is its own
+    # task). dspy.context() sets the LM for this call only, via contextvars.
+    with dspy.context(lm=get_lm()):
+        prediction = reranker(
+            request=prompt,
+            exploration=exploration,
+            user_profile=user_profile,
+            candidates=candidates,
+            image=image,
+        )
 
     results: list[RecommendationOut] = []
     seen: set[int] = set()
-    for mid in prediction.ranked_ids:
-        if mid in by_id and mid not in seen:
+    for movie_id in prediction.ranked_ids:
+        if movie_id in by_id and movie_id not in seen:
             results.append(
                 RecommendationOut(
-                    movie=by_id[mid].movie, reason=prediction.reasons.get(mid)
+                    movie=by_id[movie_id].movie,
+                    reason=prediction.reasons.get(movie_id),
+                    match_score=by_id[movie_id].cf_score,
                 )
             )
-            seen.add(mid)
+            seen.add(movie_id)
 
     for c in candidates:
         if len(results) >= k:
             break
         if c.movie.id not in seen:
-            results.append(RecommendationOut(movie=c.movie, reason=None))
+            results.append(
+                RecommendationOut(movie=c.movie, reason=None, match_score=c.cf_score)
+            )
             seen.add(c.movie.id)
     return results[:k]
 
 
-def configure_llm() -> None:
+@lru_cache(maxsize=1)
+def get_lm() -> dspy.LM:
+    """Build the LM once per process; dspy.LM is stateless and reusable."""
     settings = LLMSettings()
-    lm = dspy.LM(f"anthropic/{settings.MODEL}", api_key=settings.API_KEY)
-    dspy.configure(lm=lm)
+    return dspy.LM(f"anthropic/{settings.MODEL}", api_key=settings.API_KEY)

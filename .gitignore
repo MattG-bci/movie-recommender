@@ -129,6 +129,7 @@ celerybeat.pid
 
 # Environments
 .env
+poster_cache.json
 .venv
 env/
 venv/

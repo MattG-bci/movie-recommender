@@ -12,6 +12,8 @@ dependencies = [
     "pydantic-settings>=2.8.1",
     "playwright-stealth>=2.0.3",
     "psycopg2-binary>=2.9.12",
+    "httpx>=0.28.1",
+    "torch>=2.5.1",
 ]
 
 [tool.poetry]
