@@ -1,22 +1,39 @@
+import uuid
+
 import asyncpg
 
 from etl.sql_queries import fetch_usernames_from_db, fetch_movies_from_db
 from schemas.movie import MovieRatingIn, MovieIn
-from schemas.users import UserIn, User
+from schemas.users import UserIn, User, UserWithUUID
 from etl.generation.web_scraping import UserScraper, RatingScraper, MovieScraper
 import logging
+from uuid import UUID
 
 
 logger = logging.getLogger(__name__)
 
 
+def create_uuid_for_user(username: str) -> UUID:
+    return uuid.uuid5(uuid.NAMESPACE_DNS, username)
+
+
+def add_uuid_to_users(users: list[UserIn]) -> list[UserWithUUID]:
+    return [
+        UserWithUUID(
+            username=user.username, id_uuid=create_uuid_for_user(user.username)
+        )
+        for user in users
+    ]
+
+
 async def generate_usernames(
     conn: asyncpg.Connection, username_page: str
-) -> list[UserIn]:
+) -> list[UserWithUUID]:
     usr_scraper = UserScraper(username_page_url=username_page)
     existing_usernames = await fetch_usernames_from_db(conn)
     usernames = await usr_scraper.scrape_page_incremental(existing_usernames)
-    return usernames
+    users_with_uuid = add_uuid_to_users(usernames)
+    return users_with_uuid
 
 
 async def generate_movies(conn: asyncpg.Connection, movies_page: str) -> list[MovieIn]:

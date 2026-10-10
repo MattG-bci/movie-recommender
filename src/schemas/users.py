@@ -1,6 +1,7 @@
 import datetime
 
 from pydantic import BaseModel
+from uuid import UUID
 
 
 class UserIn(BaseModel):
@@ -8,6 +9,10 @@ class UserIn(BaseModel):
 
     # Uses memory address of an instance to hash it
     __hash__ = object.__hash__
+
+
+class UserWithUUID(UserIn):
+    id_uuid: UUID
 
 
 class User(UserIn):
