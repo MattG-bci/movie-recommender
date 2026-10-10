@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from uuid import UUID
 
 
 class MovieIn(BaseModel):
@@ -8,6 +9,10 @@ class MovieIn(BaseModel):
     country: str
     actors: list[str]
     genres: list[str]
+
+
+class MovieWithUUID(MovieIn):
+    id_uuid: UUID
 
 
 class Movie(BaseModel):

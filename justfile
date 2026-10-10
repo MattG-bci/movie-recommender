@@ -14,7 +14,7 @@ verify-db:
     cd sqitch && sqitch verify -d movie_recommender
 
 pipeline *ARGS:
-    python3 src/main.py {{ARGS}}
+    poetry run python3 src/main.py {{ARGS}}
 
 api:
     poetry run uvicorn api.app:app --reload
