@@ -98,13 +98,12 @@ class RatingScraper(BaseModel):
 
     async def scrape_data(self) -> list[MovieRating]:
         results = [
-            await self.scrape_data_per_username(username.username)
+            (username.username, await self.scrape_data_per_username(username.username))
             for username in self.usernames
         ]
 
         movie_ratings = []
-        for user, user_ratings in zip(self.usernames, results):
-            username = user.username
+        for username, user_ratings in results:
             logger.info(f"Fetched {len(user_ratings)} ratings for user: {username}")
             for title, movie_rating in user_ratings:
                 movie_ratings.append(

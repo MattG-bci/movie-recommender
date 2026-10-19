@@ -39,7 +39,7 @@ class MoviePage(BaseModel):
 class MovieRating(BaseModel):
     username: str
     movie_name: str
-    rating: float
+    rating: int
 
 
 class MovieRatingIn(BaseModel):
@@ -47,18 +47,18 @@ class MovieRatingIn(BaseModel):
     user_uuid: UUID
     movie_id: int
     movie_uuid: UUID
-    rating: float
+    rating: int
 
 
 class MovieRatingWithUUID(BaseModel):
     id_uuid: UUID
     user_id: int
     movie_id: int
-    rating: float
+    rating: int
 
 
 class MovieRatingWithId(BaseModel):
     id: int
     user_id: int
     movie_id: int
-    rating: float
+    rating: int
