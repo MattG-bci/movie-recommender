@@ -28,6 +28,7 @@ def add_uuid_to_movies(movies: list[MovieIn]) -> list[MovieWithUUID]:
             country=movie.country,
             actors=movie.actors,
             genres=movie.genres,
+            description=movie.description,
         )
         for movie in movies
     ]

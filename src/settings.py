@@ -51,6 +51,17 @@ class LLMSettings(BaseSettings):
     )
 
 
+class EmbeddingSettings(BaseSettings):
+    API_KEY: str
+    MODEL: str = "text-embedding-3-small"
+
+    model_config = SettingsConfigDict(
+        env_prefix="OPENAI_",
+        env_file=Path(__file__).parents[1] / ".env",
+        extra="ignore",
+    )
+
+
 class OMDbSettings(BaseSettings):
     API_KEY: str | None = None
     BASE_URL: str = "https://www.omdbapi.com/"

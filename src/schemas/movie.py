@@ -9,6 +9,7 @@ class MovieIn(BaseModel):
     country: str
     actors: list[str]
     genres: list[str]
+    description: str | None = None
 
 
 class MovieWithUUID(MovieIn):
@@ -17,12 +18,14 @@ class MovieWithUUID(MovieIn):
 
 class Movie(BaseModel):
     id: int
+    id_uuid: UUID | None = None
     title: str
     release_year: int
     genres: list[str]
     director: str
     country: str
     actors: list[str]
+    description: str | None = None
 
 
 class MovieOut(Movie):

@@ -5,39 +5,19 @@ import logging
 
 from schemas.modelling import ModelConfig, PATH_TO_MODEL_WEIGHTS
 from schemas.movie import Movie
-from schemas.recommendation import (
-    RerankMovies,
-    UserProfile,
-    MovieCandidate,
-    ExtractImageSemantics,
-)
+from schemas.recommendation import ExtractImageSemantics
 from schemas.users import User
 
 logger = logging.getLogger(__name__)
 
 
-class MovieReranker(dspy.Module):
+class ImageSemanticExtractor(dspy.Module):
     def __init__(self):
         super().__init__()
         self.process_vision = dspy.ChainOfThought(ExtractImageSemantics)
-        self.rerank = dspy.ChainOfThought(RerankMovies)
 
-    def forward(
-        self,
-        request: str,
-        exploration: float,
-        user_profile: UserProfile,
-        candidates: list[MovieCandidate],
-        image: dspy.Image | None = None,
-    ):
-        image_semantics = self.process_vision(image=image).output if image else None
-        return self.rerank(
-            request=request,
-            exploration=exploration,
-            user_profile=user_profile,
-            candidates=candidates,
-            image_semantics=image_semantics,
-        )
+    def forward(self, image: dspy.Image):
+        return self.process_vision(image=image).output
 
 
 class CFRecommender(nn.Module):

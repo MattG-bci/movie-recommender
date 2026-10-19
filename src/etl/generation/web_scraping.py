@@ -241,6 +241,13 @@ class MovieScraper(BaseModel):
                 logger.info(f"Error while scraping movie details for '{title}': {e}")
                 continue
 
+            description_container = movie_soup.find("div", class_="truncate")
+            description = (
+                description_container.find("p").get_text(strip=True)
+                if description_container and description_container.find("p")
+                else None
+            )
+
             movies.append(
                 MovieIn(
                     title=title,
@@ -249,6 +256,7 @@ class MovieScraper(BaseModel):
                     actors=actors,
                     genres=genres,
                     country=country,
+                    description=description,
                 )
             )
         return movies
