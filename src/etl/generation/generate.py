@@ -17,6 +17,14 @@ def create_uuid_for_user(username: str) -> UUID:
     return uuid.uuid5(uuid.NAMESPACE_DNS, username)
 
 
+def create_uuid_for_movie(title: str, release_year: int, director: str) -> UUID:
+    return uuid.uuid5(uuid.NAMESPACE_DNS, title + str(release_year) + director)
+
+
+def create_uuid_for_movie_rating(user_uuid: UUID, movie_uuid: UUID) -> UUID:
+    return uuid.uuid5(uuid.NAMESPACE_DNS, str(user_uuid) + str(movie_uuid))
+
+
 def add_uuid_to_users(users: list[UserIn]) -> list[UserWithUUID]:
     return [
         UserWithUUID(
@@ -53,6 +61,12 @@ async def generate_movie_ratings(
 
     movies_from_db = await fetch_movies_from_db(conn)
     map_movie_titles_to_ids = {movie.title: movie.id for movie in movies_from_db}
+    map_movie_titles_to_uuids = {
+        movie.title: create_uuid_for_movie(
+            movie.title, movie.release_year, movie.director
+        )
+        for movie in movies_from_db
+    }
 
     rating_scraper = RatingScraper(usernames=usernames)
     movie_data = await rating_scraper.scrape_data()
@@ -65,7 +79,9 @@ async def generate_movie_ratings(
     movie_data = [
         MovieRatingIn(
             user_id=map_usernames_to_ids[rating.username],
+            user_uuid=create_uuid_for_user(rating.username),
             movie_id=map_movie_titles_to_ids[rating.movie_name],
+            movie_uuid=map_movie_titles_to_uuids[rating.movie_name],
             rating=rating.rating,
         )
         for rating in filtered_ratings

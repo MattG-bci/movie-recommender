@@ -1,6 +1,6 @@
-import uuid
-
 from etl.generation.generate import (
+    create_uuid_for_movie,
+    create_uuid_for_movie_rating,
     generate_usernames,
     generate_movie_ratings,
     generate_movies,
@@ -12,19 +12,14 @@ from etl.sql_queries import (
     fetch_usernames_from_db,
     upsert_movie_ratings,
 )
-from schemas.movie import MovieIn, MovieWithUUID
+from schemas.movie import MovieIn, MovieWithUUID, MovieRatingIn, MovieRatingWithUUID
 from settings import WebScraperSettings
-from uuid import uuid5, UUID
-
-
-def create_uuid_for_movies(title: str, release_year: int, director: str) -> UUID:
-    return uuid5(uuid.NAMESPACE_DNS, title + str(release_year) + director)
 
 
 def add_uuid_to_movies(movies: list[MovieIn]) -> list[MovieWithUUID]:
     return [
         MovieWithUUID(
-            id_uuid=create_uuid_for_movies(
+            id_uuid=create_uuid_for_movie(
                 movie.title, movie.release_year, movie.director
             ),
             title=movie.title,
@@ -35,6 +30,20 @@ def add_uuid_to_movies(movies: list[MovieIn]) -> list[MovieWithUUID]:
             genres=movie.genres,
         )
         for movie in movies
+    ]
+
+
+def add_uuid_to_movie_ratings(
+    movie_ratings: list[MovieRatingIn],
+) -> list[MovieRatingWithUUID]:
+    return [
+        MovieRatingWithUUID(
+            id_uuid=create_uuid_for_movie_rating(rating.user_uuid, rating.movie_uuid),
+            user_id=rating.user_id,
+            movie_id=rating.movie_id,
+            rating=rating.rating,
+        )
+        for rating in movie_ratings
     ]
 
 
@@ -62,4 +71,5 @@ async def ingest_movie_ratings() -> None:
     async with DatabaseConnector() as conn:
         usernames = await fetch_usernames_from_db(conn)
         movie_ratings = await generate_movie_ratings(conn, usernames=usernames)
-        await upsert_movie_ratings(conn, movie_ratings)
+        movie_ratings_with_uuid = add_uuid_to_movie_ratings(movie_ratings)
+        await upsert_movie_ratings(conn, movie_ratings_with_uuid)

@@ -44,9 +44,21 @@ class MovieRating(BaseModel):
 
 class MovieRatingIn(BaseModel):
     user_id: int
+    user_uuid: UUID
+    movie_id: int
+    movie_uuid: UUID
+    rating: float
+
+
+class MovieRatingWithUUID(BaseModel):
+    id_uuid: UUID
+    user_id: int
     movie_id: int
     rating: float
 
 
-class MovieRatingWithId(MovieRatingIn):
+class MovieRatingWithId(BaseModel):
     id: int
+    user_id: int
+    movie_id: int
+    rating: float

@@ -7,8 +7,8 @@ from pydantic import BaseModel
 
 from typing import Any
 
-from schemas.movie import MovieRatingIn, Movie, MovieRatingWithId, MovieRating
-from schemas.users import UserIn, User
+from schemas.movie import Movie, MovieRatingWithId, MovieRatingWithUUID, MovieRating
+from schemas.users import User, UserWithUUID
 from schemas.recommendation import UserProfile
 from settings import DBSettings
 
@@ -51,14 +51,19 @@ class DatabaseConnector(BaseModel):
         await self.connection.close()
 
 
-async def insert_usernames(conn: asyncpg.Connection, usernames: list[UserIn]) -> None:
+async def insert_usernames(
+    conn: asyncpg.Connection, usernames: list[UserWithUUID]
+) -> None:
     logging.info(f"Inserting {len(usernames)} usernames to the database...")
     if not usernames:
         logging.info("No new usernames to upsert.")
         return
 
+    column_names = list(usernames[0].model_dump().keys())
+    placeholders = ", ".join(f"${i + 1}" for i in range(len(column_names)))
+
     query = f"""
-        INSERT INTO users ({", ".join(list(usernames[0].model_dump().keys()))}) VALUES ($1)
+        INSERT INTO users ({", ".join(column_names)}) VALUES ({placeholders})
     """
 
     params = [list(data.model_dump().values()) for data in usernames]
@@ -69,7 +74,7 @@ async def insert_usernames(conn: asyncpg.Connection, usernames: list[UserIn]) ->
 
 
 async def upsert_movie_ratings(
-    conn: asyncpg.Connection, movie_ratings: list[MovieRatingIn]
+    conn: asyncpg.Connection, movie_ratings: list[MovieRatingWithUUID]
 ) -> None:
     logging.info(f"Upserting {len(movie_ratings)} movie ratings to the database...")
     await upsert_to_db(
