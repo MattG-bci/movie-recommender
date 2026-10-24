@@ -60,17 +60,22 @@ async def recommend_movies(
             "Movie embeddings are missing or use a different model. "
             "Run the offline movie embedding backfill first."
         )
-    queries = [query for query in (text_query, image_query) if query]
-    query_embeddings = EmbeddingClient().embed(queries)
-    index = 0
-    text_scores = None
-    if text_query:
-        text_scores = score_semantic_query(query_embeddings[index], movie_vectors)
-        index += 1
-    image_scores = None
-    if image_query:
-        image_scores = score_semantic_query(query_embeddings[index], movie_vectors)
-    scores = blend_scores(cf_scores, text_scores, image_scores)
+    semantic_queries = {
+        name: query
+        for name, query in {"text": text_query, "image": image_query}.items()
+        if query
+    }
+    query_embeddings = EmbeddingClient().embed(list(semantic_queries.values()))
+    semantic_scores = {
+        name: score_semantic_query(embedding, movie_vectors)
+        for name, embedding in zip(semantic_queries.keys(), query_embeddings)
+    }
+
+    scores = blend_scores(
+        cf_scores,
+        text_scores=semantic_scores.get("text"),
+        image_scores=semantic_scores.get("image"),
+    )
     return format_recommendations(
         movies, scores, recommendation_input.top_k_recommendations
     )
