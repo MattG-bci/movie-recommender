@@ -15,7 +15,7 @@ from schemas.movie import (
     MovieRating,
 )
 from schemas.users import User, UserWithUUID
-from schemas.recommendation import MovieEmbedding, UserProfile
+from schemas.recommendation import MovieEmbedding
 from settings import DBSettings
 
 
@@ -225,88 +225,6 @@ async def fetch_movie_ratings_from_db(
     query = "SELECT id, user_id, movie_id, rating FROM movie_ratings"
     rows = await conn.fetch(query)
     return [MovieRatingWithId(**dict(row)) for row in rows]
-
-
-async def fetch_movie_ratings_from_db_for_movie(
-    conn: asyncpg.Connection,
-    movie_id: UUID,
-    limit: int,
-) -> list[MovieRatingWithId]:
-    query = "SELECT id, user_id, movie_id, rating FROM movie_ratings WHERE movie_id = $1 LIMIT $2"
-    rows = await conn.fetch(query, movie_id, limit)
-    return [MovieRatingWithId(**dict(row)) for row in rows]
-
-
-async def fetch_user_profile(
-    conn: asyncpg.Connection, username: str, top_k: int = 10
-) -> UserProfile:
-    query = """
-
-    WITH top_actors AS (
-        SELECT
-            UNNEST(mv.actors) AS actor,
-            AVG(mv_rat.rating) AS average_rating
-        FROM users u
-        JOIN movie_ratings mv_rat ON u.id = mv_rat.user_id
-        JOIN movies mv ON mv.id = mv_rat.movie_id
-        WHERE u.username = $1
-        GROUP BY actor
-        ORDER BY average_rating DESC
-        LIMIT $2
-    ),
-    top_genres AS (
-        SELECT
-            UNNEST(mv.genres) AS genre,
-            AVG(mv_rat.rating) AS average_rating
-        FROM users u
-        JOIN movie_ratings mv_rat ON u.id = mv_rat.user_id
-        JOIN movies mv ON mv.id = mv_rat.movie_id
-        WHERE u.username = $1
-        GROUP BY genre
-        ORDER BY average_rating DESC
-        LIMIT $2
-    ),
-    top_directors AS (
-        SELECT
-            mv.director,
-            AVG(mv_rat.rating) AS average_rating
-        FROM users u
-        JOIN movie_ratings mv_rat ON u.id = mv_rat.user_id
-        JOIN movies mv ON mv.id = mv_rat.movie_id
-        WHERE u.username = $1
-        GROUP BY director
-        ORDER BY average_rating DESC
-        LIMIT $2
-    ),
-    top_movies AS (
-        SELECT
-            u.id,
-            u.username,
-            mv.title,
-            mv_rat.rating
-        FROM users u
-        JOIN movie_ratings mv_rat ON u.id = mv_rat.user_id
-        JOIN movies mv ON mv.id = mv_rat.movie_id
-        WHERE u.username = $1
-        ORDER BY mv_rat.rating DESC
-        LIMIT $2
-    )
-    SELECT
-        (SELECT UNNEST(ARRAY_AGG(distinct id)) from top_movies) as user_id,
-	    (SELECT UNNEST(ARRAY_AGG(distinct username)) from top_movies) as username,
-        (SELECT ARRAY_AGG(actor ORDER BY average_rating DESC) FROM top_actors) AS top_actors,
-        (SELECT ARRAY_AGG(director ORDER BY average_rating DESC) FROM top_directors) AS top_directors,
-        (SELECT ARRAY_AGG(genre ORDER BY average_rating DESC) FROM top_genres) AS top_genres,
-        (SELECT ARRAY_AGG(title ORDER BY rating DESC) FROM top_movies) AS top_movies;
-    """
-
-    row = await conn.fetchrow(query, username, top_k)
-    missing = [key for key, value in row.items() if value is None]
-    if len(missing) > 0:
-        raise ValueError(
-            f"Profile for username={username} has null fields: {' '.join(missing)}"
-        )
-    return UserProfile(**row)
 
 
 async def upsert_to_db(

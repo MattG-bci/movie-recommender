@@ -9,12 +9,10 @@ from etl.sql_queries import (
     fetch_movie_by_id,
     fetch_movie_embeddings,
     fetch_movie_ratings_from_db,
-    fetch_movie_ratings_from_db_for_movie,
     fetch_movies_from_db,
     fetch_movies_page,
     fetch_ratings,
     fetch_user_by_username,
-    fetch_user_profile,
     fetch_usernames_from_db,
     insert_usernames,
     upsert_movie_embeddings,
@@ -22,7 +20,7 @@ from etl.sql_queries import (
     upsert_to_db,
 )
 from schemas.movie import MovieRating, MovieRatingWithUUID, MovieWithUUID
-from schemas.recommendation import MovieEmbedding, UserProfile
+from schemas.recommendation import MovieEmbedding
 from schemas.users import UserWithUUID
 
 
@@ -199,28 +197,6 @@ async def test_fetch_movie_ratings_from_db_returns_fixture_ratings(db_connection
             10,
         )
     }
-
-
-@pytest.mark.asyncio
-async def test_fetch_movie_ratings_from_db_for_movie_applies_limit(db_connection):
-    movie_id = fixture_movie_id("test_movie7", 1929, "director7")
-
-    ratings = await fetch_movie_ratings_from_db_for_movie(db_connection, movie_id, 1)
-
-    assert len(ratings) == 1
-    assert ratings[0].movie_id == movie_id
-
-
-@pytest.mark.asyncio
-async def test_fetch_user_profile(db_connection):
-    profile = await fetch_user_profile(db_connection, "testuser1")
-
-    assert profile == UserProfile(
-        top_genres=["genre3", "genre4", "genre2", "genre1"],
-        top_actors=["actor8", "actor2", "actor1"],
-        top_directors=["director2", "director8", "director3", "director1"],
-        top_movies=["test_movie2", "test_movie8", "test_movie3", "test_movie1"],
-    )
 
 
 @pytest.mark.asyncio
