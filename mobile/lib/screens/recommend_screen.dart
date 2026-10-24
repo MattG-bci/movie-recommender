@@ -9,8 +9,7 @@ import '../widgets/recommendation_card.dart';
 
 /// One scrollable column: multiline prompt field, an attach-image row
 /// (Photo library / Take photo) with an inline thumbnail and remove button
-/// once attached, an exploration slider labelled "Familiar <-> Adventurous",
-/// and a full-width primary button, followed by results.
+/// once attached, a full-width primary button, followed by results.
 class RecommendScreen extends StatefulWidget {
   const RecommendScreen({super.key, required this.controller});
 
@@ -27,7 +26,6 @@ class _RecommendScreenState extends State<RecommendScreen> {
       value: widget.controller,
       child: Consumer<RecommendController>(
         builder: (context, controller, _) {
-          final normalizedScores = normalizeMatchScores(controller.results);
           return Scaffold(
             body: SafeArea(
               child: ListView(
@@ -45,13 +43,15 @@ class _RecommendScreenState extends State<RecommendScreen> {
                   Row(
                     children: [
                       OutlinedButton.icon(
-                        onPressed: () => controller.pickImage(ImageOrigin.gallery),
+                        onPressed: () =>
+                            controller.pickImage(ImageOrigin.gallery),
                         icon: const Icon(Icons.photo_library_outlined),
                         label: const Text('Photo library'),
                       ),
                       const SizedBox(width: 8),
                       OutlinedButton.icon(
-                        onPressed: () => controller.pickImage(ImageOrigin.camera),
+                        onPressed: () =>
+                            controller.pickImage(ImageOrigin.camera),
                         icon: const Icon(Icons.photo_camera_outlined),
                         label: const Text('Take photo'),
                       ),
@@ -78,17 +78,13 @@ class _RecommendScreenState extends State<RecommendScreen> {
                       ],
                     ),
                   ],
-                  const SizedBox(height: 16),
-                  Text('Familiar ↔ Adventurous'),
-                  Slider(
-                    value: controller.exploration,
-                    onChanged: (value) => setState(() => controller.exploration = value),
-                  ),
                   const SizedBox(height: 8),
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton(
-                      onPressed: controller.isLoading ? null : () => controller.submit(),
+                      onPressed: controller.isLoading
+                          ? null
+                          : () => controller.submit(),
                       child: controller.isLoading
                           ? const SizedBox(
                               width: 20,
@@ -102,14 +98,14 @@ class _RecommendScreenState extends State<RecommendScreen> {
                     const SizedBox(height: 12),
                     Text(
                       describeApiError(controller.error!),
-                      style: TextStyle(color: Theme.of(context).colorScheme.error),
+                      style:
+                          TextStyle(color: Theme.of(context).colorScheme.error),
                     ),
                   ],
                   const SizedBox(height: 24),
                   for (var i = 0; i < controller.results.length; i++)
                     RecommendationCard(
                       recommendation: controller.results[i],
-                      displayScore: normalizedScores[i],
                     ),
                 ],
               ),

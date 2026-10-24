@@ -6,7 +6,7 @@ import 'package:movie_recommender_mobile/state/movies_controller.dart';
 
 class _MockApiClient extends Mock implements ApiClient {}
 
-Movie _makeMovie(int id, {String title = 'Movie'}) {
+Movie _makeMovie(String id, {String title = 'Movie'}) {
   return Movie(
     id: id,
     title: '$title $id',
@@ -26,10 +26,10 @@ void main() {
   });
 
   test('test_loadFirstPage__populatesMovies', () async {
-    when(() => api.fetchMovies(limit: any(named: 'limit'), offset: 0, search: null))
-        .thenAnswer(
+    when(() => api.fetchMovies(
+        limit: any(named: 'limit'), offset: 0, search: null)).thenAnswer(
       (_) async => MoviePage(
-        items: [_makeMovie(1), _makeMovie(2)],
+        items: [_makeMovie('1'), _makeMovie('2')],
         total: 2,
         limit: 30,
         offset: 0,
@@ -45,42 +45,48 @@ void main() {
   });
 
   test('test_loadNextPage__appendsAndAdvancesOffset', () async {
-    when(() => api.fetchMovies(limit: any(named: 'limit'), offset: 0, search: null))
-        .thenAnswer(
-      (_) async => MoviePage(items: [_makeMovie(1)], total: 2, limit: 1, offset: 0),
+    when(() => api.fetchMovies(
+        limit: any(named: 'limit'), offset: 0, search: null)).thenAnswer(
+      (_) async =>
+          MoviePage(items: [_makeMovie('1')], total: 2, limit: 1, offset: 0),
     );
-    when(() => api.fetchMovies(limit: any(named: 'limit'), offset: 1, search: null))
-        .thenAnswer(
-      (_) async => MoviePage(items: [_makeMovie(2)], total: 2, limit: 1, offset: 1),
+    when(() => api.fetchMovies(
+        limit: any(named: 'limit'), offset: 1, search: null)).thenAnswer(
+      (_) async =>
+          MoviePage(items: [_makeMovie('2')], total: 2, limit: 1, offset: 1),
     );
     final controller = MoviesController(api: api, pageSize: 1);
     await controller.loadFirstPage();
 
     await controller.loadNextPage();
 
-    expect(controller.movies.map((m) => m.id), [1, 2]);
-    verify(() => api.fetchMovies(limit: any(named: 'limit'), offset: 1, search: null))
-        .called(1);
+    expect(controller.movies.map((m) => m.id), ['1', '2']);
+    verify(() => api.fetchMovies(
+        limit: any(named: 'limit'), offset: 1, search: null)).called(1);
   });
 
   test('test_loadNextPage__noOpWhenNoMorePages', () async {
-    when(() => api.fetchMovies(limit: any(named: 'limit'), offset: 0, search: null))
-        .thenAnswer(
-      (_) async => MoviePage(items: [_makeMovie(1)], total: 1, limit: 30, offset: 0),
+    when(() => api.fetchMovies(
+        limit: any(named: 'limit'), offset: 0, search: null)).thenAnswer(
+      (_) async =>
+          MoviePage(items: [_makeMovie('1')], total: 1, limit: 30, offset: 0),
     );
     final controller = MoviesController(api: api);
     await controller.loadFirstPage();
 
     await controller.loadNextPage();
 
-    verifyNever(() => api.fetchMovies(limit: any(named: 'limit'), offset: 1, search: any(named: 'search')));
+    verifyNever(() => api.fetchMovies(
+        limit: any(named: 'limit'), offset: 1, search: any(named: 'search')));
   });
 
   test('test_loadNextPage__noOpWhileLoading', () async {
-    when(() => api.fetchMovies(limit: any(named: 'limit'), offset: 0, search: null))
-        .thenAnswer((_) async {
+    when(() => api.fetchMovies(
+        limit: any(named: 'limit'),
+        offset: 0,
+        search: null)).thenAnswer((_) async {
       await Future<void>.delayed(const Duration(milliseconds: 50));
-      return MoviePage(items: [_makeMovie(1)], total: 5, limit: 1, offset: 0);
+      return MoviePage(items: [_makeMovie('1')], total: 5, limit: 1, offset: 0);
     });
     final controller = MoviesController(api: api, pageSize: 1);
 
@@ -88,13 +94,15 @@ void main() {
     final secondCallDuringLoad = controller.loadNextPage();
     await Future.wait([firstLoad, secondCallDuringLoad]);
 
-    verifyNever(() => api.fetchMovies(limit: any(named: 'limit'), offset: 1, search: any(named: 'search')));
+    verifyNever(() => api.fetchMovies(
+        limit: any(named: 'limit'), offset: 1, search: any(named: 'search')));
   });
 
   test('test_setSearch__debouncesAndResetsOffset', () async {
-    when(() => api.fetchMovies(limit: any(named: 'limit'), offset: 0, search: 'matrix'))
-        .thenAnswer(
-      (_) async => MoviePage(items: [_makeMovie(1)], total: 1, limit: 30, offset: 0),
+    when(() => api.fetchMovies(
+        limit: any(named: 'limit'), offset: 0, search: 'matrix')).thenAnswer(
+      (_) async =>
+          MoviePage(items: [_makeMovie('1')], total: 1, limit: 30, offset: 0),
     );
     final controller = MoviesController(api: api);
 
@@ -103,13 +111,15 @@ void main() {
     await controller.setSearch('matrix');
     await Future<void>.delayed(const Duration(milliseconds: 400));
 
-    verify(() => api.fetchMovies(limit: any(named: 'limit'), offset: 0, search: 'matrix'))
-        .called(1);
+    verify(() => api.fetchMovies(
+        limit: any(named: 'limit'), offset: 0, search: 'matrix')).called(1);
   });
 
   test('test_loadFirstPage__exposesErrorOnApiException', () async {
-    when(() => api.fetchMovies(limit: any(named: 'limit'), offset: 0, search: null))
-        .thenThrow(ApiException(500, 'boom'));
+    when(() => api.fetchMovies(
+        limit: any(named: 'limit'),
+        offset: 0,
+        search: null)).thenThrow(ApiException(500, 'boom'));
     final controller = MoviesController(api: api);
 
     await controller.loadFirstPage();

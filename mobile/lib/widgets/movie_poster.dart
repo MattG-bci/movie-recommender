@@ -25,7 +25,8 @@ class MoviePoster extends StatelessWidget {
     [Color(0xFF7C5800), Color(0xFFF2BB4A)],
   ];
 
-  List<Color> get _fallbackColors => _gradients[movie.id.abs() % _gradients.length];
+  List<Color> get _fallbackColors =>
+      _gradients[movie.id.hashCode.abs() % _gradients.length];
 
   @override
   Widget build(BuildContext context) {
@@ -75,7 +76,10 @@ class _FallbackTile extends StatelessWidget {
         textAlign: TextAlign.center,
         maxLines: 4,
         overflow: TextOverflow.ellipsis,
-        style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.white),
+        style: Theme.of(context)
+            .textTheme
+            .titleMedium
+            ?.copyWith(color: Colors.white),
       ),
     );
   }

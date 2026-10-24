@@ -4,7 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:movie_recommender_mobile/api/models.dart';
 import 'package:movie_recommender_mobile/widgets/movie_poster.dart';
 
-Movie _makeMovie({int id = 1, String title = 'Some Movie', String? posterUrl}) {
+Movie _makeMovie(
+    {String id = 'movie-1', String title = 'Some Movie', String? posterUrl}) {
   return Movie(
     id: id,
     title: title,
@@ -19,23 +20,27 @@ Movie _makeMovie({int id = 1, String title = 'Some Movie', String? posterUrl}) {
 
 BoxDecoration? _fallbackDecoration(WidgetTester tester) {
   final container = tester.widget<Container>(
-    find.descendant(of: find.byType(MoviePoster), matching: find.byType(Container)),
+    find.descendant(
+        of: find.byType(MoviePoster), matching: find.byType(Container)),
   );
   return container.decoration as BoxDecoration?;
 }
 
 void main() {
-  testWidgets('test_moviePoster__rendersNetworkImageWhenPosterUrlPresent', (tester) async {
+  testWidgets('test_moviePoster__rendersNetworkImageWhenPosterUrlPresent',
+      (tester) async {
     final movie = _makeMovie(posterUrl: 'http://example.com/p.jpg');
 
     await tester.pumpWidget(MaterialApp(home: MoviePoster(movie: movie)));
 
     expect(find.byType(CachedNetworkImage), findsOneWidget);
-    final image = tester.widget<CachedNetworkImage>(find.byType(CachedNetworkImage));
+    final image =
+        tester.widget<CachedNetworkImage>(find.byType(CachedNetworkImage));
     expect(image.imageUrl, 'http://example.com/p.jpg');
   });
 
-  testWidgets('test_moviePoster__rendersFallbackWhenPosterUrlIsNull', (tester) async {
+  testWidgets('test_moviePoster__rendersFallbackWhenPosterUrlIsNull',
+      (tester) async {
     final movie = _makeMovie(posterUrl: null, title: 'Fallback Title');
 
     await tester.pumpWidget(MaterialApp(home: MoviePoster(movie: movie)));
@@ -45,9 +50,12 @@ void main() {
     expect(find.byType(CachedNetworkImage), findsNothing);
   });
 
-  testWidgets('test_moviePoster__fallbackGradientIsDeterministicForSameMovieId', (tester) async {
-    final movieA = _makeMovie(id: 42, title: 'Title A', posterUrl: null);
-    final movieB = _makeMovie(id: 42, title: 'Title B', posterUrl: null);
+  testWidgets('test_moviePoster__fallbackGradientIsDeterministicForSameMovieId',
+      (tester) async {
+    final movieA =
+        _makeMovie(id: 'movie-42', title: 'Title A', posterUrl: null);
+    final movieB =
+        _makeMovie(id: 'movie-42', title: 'Title B', posterUrl: null);
 
     await tester.pumpWidget(MaterialApp(home: MoviePoster(movie: movieA)));
     await tester.pump();

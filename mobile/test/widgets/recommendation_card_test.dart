@@ -5,7 +5,7 @@ import 'package:movie_recommender_mobile/widgets/recommendation_card.dart';
 
 Movie _makeMovie() {
   return const Movie(
-    id: 1,
+    id: 'movie-1',
     title: 'Some Movie',
     releaseYear: 2020,
     genres: ['Action'],
@@ -17,27 +17,32 @@ Movie _makeMovie() {
 
 void main() {
   testWidgets('test_recommendationCard__showsMatchScorePill', (tester) async {
-    final recommendation = Recommendation(movie: _makeMovie(), reason: 'great pick', matchScore: 87.0);
+    final recommendation = Recommendation(
+        movie: _makeMovie(), reason: 'great pick', matchScore: 8.7);
 
     await tester.pumpWidget(
       MaterialApp(home: RecommendationCard(recommendation: recommendation)),
     );
 
-    expect(find.text('87'), findsOneWidget);
+    expect(find.text('8.7/10'), findsOneWidget);
   });
 
-  testWidgets('test_recommendationCard__hidesMatchScorePillWhenNull', (tester) async {
-    final recommendation = Recommendation(movie: _makeMovie(), reason: 'great pick', matchScore: null);
+  testWidgets('test_recommendationCard__hidesMatchScorePillWhenNull',
+      (tester) async {
+    final recommendation = Recommendation(
+        movie: _makeMovie(), reason: 'great pick', matchScore: null);
 
     await tester.pumpWidget(
       MaterialApp(home: RecommendationCard(recommendation: recommendation)),
     );
 
-    expect(find.text('87'), findsNothing);
+    expect(find.text('8.7/10'), findsNothing);
   });
 
-  testWidgets('test_recommendationCard__showsFallbackTextWhenReasonIsNull', (tester) async {
-    final recommendation = Recommendation(movie: _makeMovie(), reason: null, matchScore: 50.0);
+  testWidgets('test_recommendationCard__showsFallbackTextWhenReasonIsNull',
+      (tester) async {
+    final recommendation =
+        Recommendation(movie: _makeMovie(), reason: null, matchScore: 5.0);
 
     await tester.pumpWidget(
       MaterialApp(home: RecommendationCard(recommendation: recommendation)),

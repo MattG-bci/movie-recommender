@@ -1,5 +1,5 @@
-/// Wire models mirroring the FastAPI response shapes from `MovieOut`,
-/// `MoviePage`, `User` and `RecommendationItem`.
+// Wire models mirroring the FastAPI response shapes from `MovieOut`,
+// `MoviePage`, `User` and `RecommendationItem`.
 
 class Movie {
   const Movie({
@@ -10,29 +10,34 @@ class Movie {
     required this.director,
     required this.country,
     required this.actors,
+    this.description,
     this.posterUrl,
   });
 
-  final int id;
+  /// Backend identifiers are UUIDs. Keep them opaque: the app only needs to
+  /// pass them back to the API and use them for stable widget identity.
+  final String id;
   final String title;
   final int releaseYear;
   final List<String> genres;
   final String director;
   final String country;
   final List<String> actors;
+  final String? description;
   // Nullable throughout the UI: OMDb will miss some films and may be
   // keyless or over quota.
   final String? posterUrl;
 
   factory Movie.fromJson(Map<String, dynamic> json) {
     return Movie(
-      id: json['id'] as int,
+      id: json['id'] as String,
       title: json['title'] as String,
       releaseYear: json['release_year'] as int,
       genres: List<String>.from(json['genres'] as List? ?? const []),
       director: json['director'] as String,
       country: json['country'] as String,
       actors: List<String>.from(json['actors'] as List? ?? const []),
+      description: json['description'] as String?,
       posterUrl: json['poster_url'] as String?,
     );
   }
@@ -66,11 +71,12 @@ class MoviePage {
 class AppUser {
   const AppUser({required this.id, required this.username});
 
-  final int id;
+  final String id;
   final String username;
 
   factory AppUser.fromJson(Map<String, dynamic> json) {
-    return AppUser(id: json['id'] as int, username: json['username'] as String);
+    return AppUser(
+        id: json['id'] as String, username: json['username'] as String);
   }
 }
 

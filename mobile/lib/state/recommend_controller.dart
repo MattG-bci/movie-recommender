@@ -6,33 +6,7 @@ import '../services/image_source_service.dart';
 
 enum ImageOrigin { gallery, camera }
 
-/// The API keeps the raw `match_score` (a CF embedding dot product, not a
-/// percentage) so the client decides presentation. Min-max normalises the
-/// non-null scores across the returned candidate set into a 0-100 range for
-/// display; a `null` score stays `null` in the output.
-List<double?> normalizeMatchScores(List<Recommendation> results) {
-  final scores = results.map((r) => r.matchScore).whereType<double>().toList();
-  if (scores.isEmpty) {
-    return List<double?>.filled(results.length, null);
-  }
-
-  final min = scores.reduce((a, b) => a < b ? a : b);
-  final max = scores.reduce((a, b) => a > b ? a : b);
-  final range = max - min;
-
-  return results.map((r) {
-    final score = r.matchScore;
-    if (score == null) {
-      return null;
-    }
-    if (range == 0) {
-      return 100.0;
-    }
-    return (score - min) / range * 100;
-  }).toList();
-}
-
-/// Recommend-tab state: prompt, exploration slider, optional attached image
+/// Recommend-tab state: prompt, optional attached image
 /// and results. `submit()` refuses to fire when both the prompt is blank and
 /// no image is attached, and is a no-op while already loading.
 class RecommendController extends ChangeNotifier {
@@ -47,18 +21,11 @@ class RecommendController extends ChangeNotifier {
   final ImageSourceService _images;
   final String username;
 
-  String _prompt = '';
-  double _exploration = 0.3;
+  String prompt = '';
   String? _imageBase64;
   bool _isLoading = false;
   Object? _error;
   List<Recommendation> _results = [];
-
-  String get prompt => _prompt;
-  set prompt(String value) => _prompt = value;
-
-  double get exploration => _exploration;
-  set exploration(double value) => _exploration = value.clamp(0.0, 1.0).toDouble();
 
   String? get imageBase64 => _imageBase64;
   bool get isLoading => _isLoading;
@@ -86,7 +53,7 @@ class RecommendController extends ChangeNotifier {
     if (_isLoading) {
       return;
     }
-    if (_prompt.trim().isEmpty && _imageBase64 == null) {
+    if (prompt.trim().isEmpty && _imageBase64 == null) {
       return;
     }
 
@@ -97,8 +64,7 @@ class RecommendController extends ChangeNotifier {
     try {
       _results = await _api.recommend(
         username: username,
-        prompt: _prompt,
-        exploration: _exploration,
+        prompt: prompt,
         imageBase64: _imageBase64,
       );
     } catch (e) {

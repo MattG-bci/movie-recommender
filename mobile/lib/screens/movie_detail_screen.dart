@@ -32,6 +32,11 @@ class MovieDetailScreen extends StatelessWidget {
                   '${movie.title} (${movie.releaseYear})',
                   style: Theme.of(context).textTheme.headlineMedium,
                 ),
+                if (movie.description != null &&
+                    movie.description!.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Text(movie.description!),
+                ],
                 const SizedBox(height: 16),
                 MetadataChipsRow(label: 'Genres', values: movie.genres),
                 MetadataChipsRow(label: 'Director', values: [movie.director]),

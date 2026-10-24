@@ -19,7 +19,7 @@ void main() {
 
   test('test_signIn__persistsUsernameOnSuccess', () async {
     when(() => api.fetchUser('alice')).thenAnswer(
-      (_) async => const AppUser(id: 1, username: 'alice'),
+      (_) async => const AppUser(id: 'user-1', username: 'alice'),
     );
     final session = Session(api: api, prefs: prefs);
 
@@ -31,7 +31,8 @@ void main() {
   });
 
   test('test_signIn__throwsUnknownUserExceptionOn404', () async {
-    when(() => api.fetchUser('ghost')).thenThrow(NotFoundException('not found'));
+    when(() => api.fetchUser('ghost'))
+        .thenThrow(NotFoundException('not found'));
     final session = Session(api: api, prefs: prefs);
 
     expect(
@@ -41,7 +42,8 @@ void main() {
   });
 
   test('test_signIn__doesNotPersistOnFailure', () async {
-    when(() => api.fetchUser('ghost')).thenThrow(NotFoundException('not found'));
+    when(() => api.fetchUser('ghost'))
+        .thenThrow(NotFoundException('not found'));
     final session = Session(api: api, prefs: prefs);
 
     try {
@@ -67,7 +69,7 @@ void main() {
 
   test('test_signOut__clearsPersistedUsername', () async {
     when(() => api.fetchUser('alice')).thenAnswer(
-      (_) async => const AppUser(id: 1, username: 'alice'),
+      (_) async => const AppUser(id: 'user-1', username: 'alice'),
     );
     final session = Session(api: api, prefs: prefs);
     await session.signIn('alice');
