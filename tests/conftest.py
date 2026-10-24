@@ -31,7 +31,7 @@ def docker_compose_file():
 
 @pytest.fixture(scope="session")
 def docker_compose_command():
-    return "docker-compose"
+    return "docker compose"
 
 
 @pytest.fixture(scope="session")
