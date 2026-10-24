@@ -32,13 +32,6 @@ class RecommendationItem(BaseModel):
     match_score: float | None
 
 
-class UserProfile(BaseModel):
-    top_genres: list[str]
-    top_actors: list[str]
-    top_directors: list[str]
-    top_movies: list[str]
-
-
 class MovieCandidate(BaseModel):
     movie: Movie
     cf_score: float
