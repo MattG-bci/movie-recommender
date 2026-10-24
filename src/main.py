@@ -39,14 +39,14 @@ async def run_usernames_ingestion() -> None:
 
 @app.command()
 @async_typer_command
-async def run_movies_ingestion() -> None:
-    await ingest_movies()
+async def run_ratings_ingestion() -> None:
+    await ingest_movie_ratings()
 
 
 @app.command()
 @async_typer_command
-async def run_ratings_ingestion() -> None:
-    await ingest_movie_ratings()
+async def run_movie_ingestion() -> None:
+    await ingest_movies()
 
 
 @app.command()
@@ -70,7 +70,7 @@ async def run_recommender_training(save_model: bool = True) -> None:
 @async_typer_command
 async def run_movie_recommendation(
     username: str,
-    img_path: str | None,
+    img_path: str | None = None,
     prompt: str = "I am a bit lonely now. I need something light-hearted",
 ) -> None:
     image = dspy.Image(img_path) if img_path else None

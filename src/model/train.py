@@ -80,8 +80,8 @@ def train_movie_recommender(config: ModelTrainConfig) -> CFRecommender:
             train_metrics["targets"],
             metrics=["mse", "mape"],
         )
-        for metric in metrics.keys():
-            logger.info(f"Train {metric.upper()}: {getattr(metrics, metric):.3f}")
+        for metric, val in metrics.items():
+            logger.info(f"Train {metric.upper()}: {val:.3f}")
 
         logger.info("Starting validation...")
         validation_metrics = defaultdict(list)
@@ -104,8 +104,8 @@ def train_movie_recommender(config: ModelTrainConfig) -> CFRecommender:
             validation_metrics["targets"],
             metrics=["mse", "mape"],
         )
-        for metric in metrics.keys():
-            logger.info(f"Validation {metric.upper()}: {getattr(metrics, metric):.3f}")
+        for metric, val in metrics.items():
+            logger.info(f"Validation {metric.upper()}: {val:.3f}")
         logger.info("--------------------------")
     logger.info("Training complete.")
     return model

@@ -12,7 +12,7 @@ PATH_TO_MODEL_WEIGHTS = "models/recommender_model.pth"
 
 @dataclass
 class ModelTrainHyperparameters:
-    epochs: int = 100
+    epochs: int = 10
     batch_size: int = 64
 
 
