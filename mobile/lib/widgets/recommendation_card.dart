@@ -7,13 +7,12 @@ import 'movie_poster.dart';
 /// pill shown only when `matchScore != null`, and the reason in quoted
 /// italics, or a muted fallback when `reason` is null.
 class RecommendationCard extends StatelessWidget {
-  const RecommendationCard({super.key, required this.recommendation, this.displayScore});
+  const RecommendationCard(
+      {super.key, required this.recommendation, this.displayScore});
 
   final Recommendation recommendation;
 
-  /// Pre-normalised (0-100) score to render, computed by the caller across
-  /// the full result set via [normalizeMatchScores]. Falls back to the raw
-  /// `matchScore` when not supplied, e.g. in isolated widget tests.
+  /// The backend's hybrid score is already on a 1--10 scale.
   final double? displayScore;
 
   @override
@@ -39,9 +38,10 @@ class RecommendationCard extends StatelessWidget {
                           style: Theme.of(context).textTheme.titleMedium,
                         ),
                       ),
-                      if (recommendation.matchScore != null) _MatchScorePill(
-                        score: displayScore ?? recommendation.matchScore!,
-                      ),
+                      if (recommendation.matchScore != null)
+                        _MatchScorePill(
+                          score: displayScore ?? recommendation.matchScore!,
+                        ),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -51,7 +51,8 @@ class RecommendationCard extends StatelessWidget {
                         : 'Picked by your taste profile.',
                     style: recommendation.reason != null
                         ? const TextStyle(fontStyle: FontStyle.italic)
-                        : TextStyle(color: Theme.of(context).colorScheme.outline),
+                        : TextStyle(
+                            color: Theme.of(context).colorScheme.outline),
                   ),
                 ],
               ),
@@ -77,8 +78,9 @@ class _MatchScorePill extends StatelessWidget {
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
-        '${score.round()}',
-        style: TextStyle(color: Theme.of(context).colorScheme.onPrimaryContainer),
+        '${score.toStringAsFixed(1)}/10',
+        style:
+            TextStyle(color: Theme.of(context).colorScheme.onPrimaryContainer),
       ),
     );
   }

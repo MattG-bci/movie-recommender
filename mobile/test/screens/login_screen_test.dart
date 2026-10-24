@@ -31,8 +31,10 @@ void main() {
     session = Session(api: api, prefs: prefs);
   });
 
-  testWidgets('test_loginScreen__showsInlineErrorForUnknownUser', (tester) async {
-    when(() => api.fetchUser('ghost')).thenThrow(NotFoundException('not found'));
+  testWidgets('test_loginScreen__showsInlineErrorForUnknownUser',
+      (tester) async {
+    when(() => api.fetchUser('ghost'))
+        .thenThrow(NotFoundException('not found'));
     await _pumpLoginScreen(tester, session);
 
     await tester.enterText(find.byType(TextField), 'ghost');
@@ -42,7 +44,8 @@ void main() {
     expect(find.textContaining('No such user'), findsOneWidget);
   });
 
-  testWidgets('test_loginScreen__rejectsEmptyUsernameWithoutRequest', (tester) async {
+  testWidgets('test_loginScreen__rejectsEmptyUsernameWithoutRequest',
+      (tester) async {
     await _pumpLoginScreen(tester, session);
 
     await tester.tap(find.text('Continue'));
@@ -55,7 +58,7 @@ void main() {
   testWidgets('test_loginScreen__disablesButtonWhileLoading', (tester) async {
     when(() => api.fetchUser('alice')).thenAnswer((_) async {
       await Future<void>.delayed(const Duration(milliseconds: 100));
-      return const AppUser(id: 1, username: 'alice');
+      return const AppUser(id: 'user-1', username: 'alice');
     });
     await _pumpLoginScreen(tester, session);
 

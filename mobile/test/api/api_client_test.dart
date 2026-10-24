@@ -61,31 +61,36 @@ void main() {
   });
 
   test('test_recommend__omitsImageWhenNull', () async {
-    when(() => httpClient.post(any(), headers: any(named: 'headers'), body: any(named: 'body')))
+    when(() => httpClient.post(any(),
+            headers: any(named: 'headers'), body: any(named: 'body')))
         .thenAnswer((_) async => http.Response('[]', 200));
 
-    await apiClient.recommend(username: 'alice', prompt: 'something', exploration: 0.3);
+    await apiClient.recommend(username: 'alice', prompt: 'something');
 
     final captured = verify(
-      () => httpClient.post(any(), headers: any(named: 'headers'), body: captureAny(named: 'body')),
+      () => httpClient.post(any(),
+          headers: any(named: 'headers'), body: captureAny(named: 'body')),
     ).captured;
     final body = jsonDecode(captured.single as String) as Map<String, dynamic>;
     expect(body.containsKey('image_base64'), isFalse);
+    expect(body['top_k'], 10);
+    expect(body.containsKey('exploration'), isFalse);
   });
 
   test('test_recommend__postsBase64ImageWhenProvided', () async {
-    when(() => httpClient.post(any(), headers: any(named: 'headers'), body: any(named: 'body')))
+    when(() => httpClient.post(any(),
+            headers: any(named: 'headers'), body: any(named: 'body')))
         .thenAnswer((_) async => http.Response('[]', 200));
 
     await apiClient.recommend(
       username: 'alice',
       prompt: 'something',
-      exploration: 0.3,
       imageBase64: 'ZmFrZQ==',
     );
 
     final captured = verify(
-      () => httpClient.post(any(), headers: any(named: 'headers'), body: captureAny(named: 'body')),
+      () => httpClient.post(any(),
+          headers: any(named: 'headers'), body: captureAny(named: 'body')),
     ).captured;
     final body = jsonDecode(captured.single as String) as Map<String, dynamic>;
     expect(body['image_base64'], 'ZmFrZQ==');

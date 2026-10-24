@@ -7,13 +7,14 @@ Map<String, dynamic> _movieJson({
   List<dynamic> actors = const ['Actor A'],
 }) {
   return {
-    'id': 1,
+    'id': '0b7c2ba0-1d4f-4b0c-8b5a-1f6b5a2a1f01',
     'title': 'Some Movie',
     'release_year': 2024,
     'genres': genres,
     'director': 'Director A',
     'country': 'US',
     'actors': actors,
+    'description': 'A movie description.',
     'poster_url': posterUrl,
   };
 }
@@ -22,13 +23,14 @@ void main() {
   test('test_movieFromJson__parsesFullMetadata', () {
     final movie = Movie.fromJson(_movieJson());
 
-    expect(movie.id, 1);
+    expect(movie.id, '0b7c2ba0-1d4f-4b0c-8b5a-1f6b5a2a1f01');
     expect(movie.title, 'Some Movie');
     expect(movie.releaseYear, 2024);
     expect(movie.genres, ['Action', 'Drama']);
     expect(movie.director, 'Director A');
     expect(movie.country, 'US');
     expect(movie.actors, ['Actor A']);
+    expect(movie.description, 'A movie description.');
     expect(movie.posterUrl, 'http://example.com/p.jpg');
   });
 
@@ -39,7 +41,8 @@ void main() {
   });
 
   test('test_movieFromJson__parsesEmptyGenresAndActors', () {
-    final movie = Movie.fromJson(_movieJson(genres: const [], actors: const []));
+    final movie =
+        Movie.fromJson(_movieJson(genres: const [], actors: const []));
 
     expect(movie.genres, isEmpty);
     expect(movie.actors, isEmpty);

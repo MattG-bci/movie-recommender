@@ -13,7 +13,7 @@ class _MockImageSourceService extends Mock implements ImageSourceService {}
 
 Movie _makeMovie() {
   return const Movie(
-    id: 1,
+    id: 'movie-1',
     title: 'Some Movie',
     releaseYear: 2020,
     genres: ['Action'],
@@ -31,39 +31,45 @@ void main() {
   setUp(() {
     api = _MockApiClient();
     images = _MockImageSourceService();
-    controller = RecommendController(api: api, images: images, username: 'alice');
+    controller =
+        RecommendController(api: api, images: images, username: 'alice');
   });
 
-  testWidgets('test_recommendScreen__rendersResultsAfterSubmit', (tester) async {
+  testWidgets('test_recommendScreen__rendersResultsAfterSubmit',
+      (tester) async {
     when(() => api.recommend(
           username: any(named: 'username'),
           prompt: any(named: 'prompt'),
-          exploration: any(named: 'exploration'),
           imageBase64: any(named: 'imageBase64'),
         )).thenAnswer(
-      (_) async => [Recommendation(movie: _makeMovie(), reason: 'great pick', matchScore: 9.0)],
+      (_) async => [
+        Recommendation(
+            movie: _makeMovie(), reason: 'great pick', matchScore: 9.0)
+      ],
     );
 
-    await tester.pumpWidget(MaterialApp(home: RecommendScreen(controller: controller)));
+    await tester
+        .pumpWidget(MaterialApp(home: RecommendScreen(controller: controller)));
     await tester.enterText(find.byType(TextField), 'something fun');
     await tester.tap(find.text('Get recommendations'));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('Some Movie'), findsOneWidget);
+    expect(find.text('Some Movie (2020)'), findsOneWidget);
   });
 
-  testWidgets('test_recommendScreen__showsLoadingStateWhileSubmitting', (tester) async {
+  testWidgets('test_recommendScreen__showsLoadingStateWhileSubmitting',
+      (tester) async {
     when(() => api.recommend(
           username: any(named: 'username'),
           prompt: any(named: 'prompt'),
-          exploration: any(named: 'exploration'),
           imageBase64: any(named: 'imageBase64'),
         )).thenAnswer((_) async {
       await Future<void>.delayed(const Duration(milliseconds: 100));
       return <Recommendation>[];
     });
 
-    await tester.pumpWidget(MaterialApp(home: RecommendScreen(controller: controller)));
+    await tester
+        .pumpWidget(MaterialApp(home: RecommendScreen(controller: controller)));
     await tester.enterText(find.byType(TextField), 'something fun');
     await tester.tap(find.text('Get recommendations'));
     await tester.pump();

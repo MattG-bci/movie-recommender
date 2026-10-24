@@ -54,12 +54,13 @@ String describeApiError(Object error) {
 
 class ApiClient {
   ApiClient({http.Client? client, this.baseUrl = apiBaseUrl})
-    : _client = client ?? http.Client();
+      : _client = client ?? http.Client();
 
   final http.Client _client;
   final String baseUrl;
 
-  // The reranking round-trip can take tens of seconds; give it room.
+  // A hybrid recommendation can include semantic image analysis and embedding
+  // lookups, so it may take longer than ordinary catalogue requests.
   static const Duration _recommendTimeout = Duration(seconds: 240);
   static const Duration _defaultTimeout = Duration(seconds: 15);
 
@@ -74,23 +75,26 @@ class ApiClient {
       if (search != null) 'search': search,
     };
     final uri = Uri.parse('$baseUrl/movies').replace(queryParameters: params);
-    final response = await _client.get(uri).timeout(_defaultTimeout, onTimeout: () => throw ApiTimeoutException(_defaultTimeout));
+    final response = await _client.get(uri).timeout(_defaultTimeout,
+        onTimeout: () => throw ApiTimeoutException(_defaultTimeout));
     _throwIfNotOk(response);
     return MoviePage.fromJson(
       jsonDecode(response.body) as Map<String, dynamic>,
     );
   }
 
-  Future<Movie> fetchMovie(int id) async {
+  Future<Movie> fetchMovie(String id) async {
     final uri = Uri.parse('$baseUrl/movies/$id');
-    final response = await _client.get(uri).timeout(_defaultTimeout, onTimeout: () => throw ApiTimeoutException(_defaultTimeout));
+    final response = await _client.get(uri).timeout(_defaultTimeout,
+        onTimeout: () => throw ApiTimeoutException(_defaultTimeout));
     _throwIfNotOk(response);
     return Movie.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
   }
 
   Future<AppUser> fetchUser(String username) async {
     final uri = Uri.parse('$baseUrl/users/$username');
-    final response = await _client.get(uri).timeout(_defaultTimeout, onTimeout: () => throw ApiTimeoutException(_defaultTimeout));
+    final response = await _client.get(uri).timeout(_defaultTimeout,
+        onTimeout: () => throw ApiTimeoutException(_defaultTimeout));
     _throwIfNotOk(response);
     return AppUser.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
   }
@@ -98,14 +102,14 @@ class ApiClient {
   Future<List<Recommendation>> recommend({
     required String username,
     required String prompt,
-    required double exploration,
     String? imageBase64,
+    int topK = 10,
   }) async {
     final uri = Uri.parse('$baseUrl/recommendations');
     final body = <String, dynamic>{
       'username': username,
       'prompt': prompt,
-      'exploration': exploration,
+      'top_k': topK,
       if (imageBase64 != null) 'image_base64': imageBase64,
     };
     final response = await _client
@@ -114,7 +118,8 @@ class ApiClient {
           headers: const {'Content-Type': 'application/json'},
           body: jsonEncode(body),
         )
-        .timeout(_recommendTimeout, onTimeout: () => throw ApiTimeoutException(_recommendTimeout));
+        .timeout(_recommendTimeout,
+            onTimeout: () => throw ApiTimeoutException(_recommendTimeout));
     _throwIfNotOk(response);
     final decoded = jsonDecode(response.body) as List;
     return decoded

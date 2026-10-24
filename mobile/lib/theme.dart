@@ -10,7 +10,7 @@ ThemeData buildAppTheme(Brightness brightness) {
     brightness: brightness,
   );
 
-  final textTheme = const TextTheme(
+  const textTheme = TextTheme(
     headlineLarge: TextStyle(fontWeight: FontWeight.w700, letterSpacing: -0.5),
     headlineMedium: TextStyle(fontWeight: FontWeight.w700, letterSpacing: -0.3),
     titleLarge: TextStyle(fontWeight: FontWeight.w600),

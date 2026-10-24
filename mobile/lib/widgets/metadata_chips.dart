@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 /// A labelled row of chips used on the movie detail screen for genres,
-/// director, country and cast. There is no synopsis section anywhere.
+/// director, country and cast.
 class MetadataChipsRow extends StatelessWidget {
   const MetadataChipsRow({super.key, required this.label, required this.values});
 
