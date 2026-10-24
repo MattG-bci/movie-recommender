@@ -10,7 +10,6 @@ Do not append a `Claude-Session:` trailer (or any session URL) to commit message
 
 ```
 movie-recommender/
-├── .circleci/
 ├── .github/
 │   └── workflows/
 ├── dags/
