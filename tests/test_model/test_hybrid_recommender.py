@@ -1,5 +1,4 @@
 from datetime import datetime
-from uuid import UUID
 
 import pytest
 import dspy
@@ -14,7 +13,6 @@ def _movies() -> list[Movie]:
     return [
         Movie(
             id=1,
-            id_uuid=UUID("00000000-0000-0000-0000-000000000001"),
             title="One",
             release_year=2024,
             genres=["Drama"],
@@ -24,7 +22,6 @@ def _movies() -> list[Movie]:
         ),
         Movie(
             id=2,
-            id_uuid=UUID("00000000-0000-0000-0000-000000000002"),
             title="Two",
             release_year=2024,
             genres=["Comedy"],
@@ -51,15 +48,13 @@ async def test_recommend_movies_scores_all_movies_without_reranking(monkeypatch)
     movies = _movies()
     stored = [
         MovieEmbedding(
-            movie_id=1,
-            movie_uuid=movies[0].id_uuid,
+            movie_id=movies[0].id,
             recommendation_profile="one",
             embedding_model="model",
             embedding=[0.0, 1.0],
         ),
         MovieEmbedding(
-            movie_id=2,
-            movie_uuid=movies[1].id_uuid,
+            movie_id=movies[1].id,
             recommendation_profile="two",
             embedding_model="model",
             embedding=[1.0, 0.0],
@@ -103,7 +98,6 @@ def test_validate_embeddings_rejects_missing_or_mismatched_values():
             [
                 MovieEmbedding(
                     movie_id=1,
-                    movie_uuid=UUID("00000000-0000-0000-0000-000000000001"),
                     recommendation_profile=None,
                     embedding_model="model",
                     embedding=[1.0],
@@ -173,15 +167,13 @@ def test_extract_image_query_uses_image_semantics(monkeypatch):
 async def test_recommend_movies_image_only_embeds_only_image_query(monkeypatch):
     stored = [
         MovieEmbedding(
-            movie_id=1,
-            movie_uuid=_movies()[0].id_uuid,
+            movie_id=_movies()[0].id,
             recommendation_profile="one",
             embedding_model="model",
             embedding=[0.0, 1.0],
         ),
         MovieEmbedding(
-            movie_id=2,
-            movie_uuid=_movies()[1].id_uuid,
+            movie_id=_movies()[1].id,
             recommendation_profile="two",
             embedding_model="model",
             embedding=[1.0, 0.0],

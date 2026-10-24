@@ -13,12 +13,11 @@ class MovieIn(BaseModel):
 
 
 class MovieWithUUID(MovieIn):
-    id_uuid: UUID
+    id: UUID
 
 
 class Movie(BaseModel):
-    id: int
-    id_uuid: UUID | None = None
+    id: UUID | int
     title: str
     release_year: int
     genres: list[str]
@@ -46,22 +45,20 @@ class MovieRating(BaseModel):
 
 
 class MovieRatingIn(BaseModel):
-    user_id: int
-    user_uuid: UUID
-    movie_id: int
-    movie_uuid: UUID
+    user_id: UUID | int
+    movie_id: UUID | int
     rating: int
 
 
 class MovieRatingWithUUID(BaseModel):
-    id_uuid: UUID
-    user_id: int
-    movie_id: int
+    id: UUID
+    user_id: UUID | int
+    movie_id: UUID | int
     rating: int
 
 
 class MovieRatingWithId(BaseModel):
-    id: int
-    user_id: int
-    movie_id: int
+    id: UUID | int
+    user_id: UUID | int
+    movie_id: UUID | int
     rating: int

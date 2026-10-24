@@ -27,9 +27,7 @@ def create_uuid_for_movie_rating(user_uuid: UUID, movie_uuid: UUID) -> UUID:
 
 def add_uuid_to_users(users: list[UserIn]) -> list[UserWithUUID]:
     return [
-        UserWithUUID(
-            username=user.username, id_uuid=create_uuid_for_user(user.username)
-        )
+        UserWithUUID(username=user.username, id=create_uuid_for_user(user.username))
         for user in users
     ]
 
@@ -61,12 +59,6 @@ async def generate_movie_ratings(
 
     movies_from_db = await fetch_movies_from_db(conn)
     map_movie_titles_to_ids = {movie.title: movie.id for movie in movies_from_db}
-    map_movie_titles_to_uuids = {
-        movie.title: create_uuid_for_movie(
-            movie.title, movie.release_year, movie.director
-        )
-        for movie in movies_from_db
-    }
 
     rating_scraper = RatingScraper(usernames=usernames)
     movie_data = await rating_scraper.scrape_data()
@@ -79,9 +71,7 @@ async def generate_movie_ratings(
     movie_data = [
         MovieRatingIn(
             user_id=map_usernames_to_ids[rating.username],
-            user_uuid=create_uuid_for_user(rating.username),
             movie_id=map_movie_titles_to_ids[rating.movie_name],
-            movie_uuid=map_movie_titles_to_uuids[rating.movie_name],
             rating=rating.rating,
         )
         for rating in filtered_ratings

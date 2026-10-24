@@ -69,9 +69,12 @@ def docker_services(
     teardown_flag_file = root_tmp / "docker_teardown.flag"
 
     with FileLock(str(lock_file)):
-        if not setup_flag_file.exists():
+        test_db_running = bool(docker_compose.execute("ps -q test-db").strip())
+        if not setup_flag_file.exists() or not test_db_running:
             docker_compose.execute(docker_setup)
             setup_flag_file.write_text("started")
+            teardown_flag_file.unlink(missing_ok=True)
+            (root_tmp / "db_setup.flag").unlink(missing_ok=True)
 
         yield Services(docker_compose)
 
@@ -239,12 +242,12 @@ def setup_test_db(settings: DBSettings):
 def load_fixtures(settings: DBSettings):
     # Order of the tables matters here
     fixtures = [
-        ("users", ["id", "username"]),
+        ("users", ["username"]),
         (
             "movies",
-            ["id", "title", "release_year", "director", "genres", "country", "actors"],
+            ["title", "release_year", "director", "genres", "country", "actors"],
         ),
-        ("movie_ratings", ["id", "user_id", "movie_id", "rating"]),
+        ("movie_ratings", ["user_id", "movie_id", "rating"]),
     ]
 
     user_uuids = {}
@@ -256,25 +259,32 @@ def load_fixtures(settings: DBSettings):
 
         for row in data:
             if table == "users":
-                row["id_uuid"] = str(uuid.uuid5(uuid.NAMESPACE_DNS, row["username"]))
-                user_uuids[row["id"]] = row["id_uuid"]
+                legacy_id = row.pop("id")
+                row["id"] = str(uuid.uuid5(uuid.NAMESPACE_DNS, row["username"]))
+                user_uuids[legacy_id] = row["id"]
             elif table == "movies":
-                row["id_uuid"] = str(
+                legacy_id = row.pop("id")
+                row["id"] = str(
                     uuid.uuid5(
                         uuid.NAMESPACE_DNS,
                         row["title"] + row["release_year"] + row["director"],
                     )
                 )
-                movie_uuids[row["id"]] = row["id_uuid"]
+                movie_uuids[legacy_id] = row["id"]
             elif table == "movie_ratings":
-                row["id_uuid"] = str(
+                legacy_id = row.pop("id")
+                legacy_user_id = row.pop("user_id")
+                legacy_movie_id = row.pop("movie_id")
+                row["id"] = str(
                     uuid.uuid5(
                         uuid.NAMESPACE_DNS,
-                        user_uuids[row["user_id"]] + movie_uuids[row["movie_id"]],
+                        user_uuids[legacy_user_id] + movie_uuids[legacy_movie_id],
                     )
                 )
+                row["user_id"] = user_uuids[legacy_user_id]
+                row["movie_id"] = movie_uuids[legacy_movie_id]
 
-        all_columns = columns + ["id_uuid"]
+        all_columns = ["id", *columns]
         cols = ", ".join(all_columns)
         values = ", ".join(f"%({col})s" for col in all_columns)
         query = f"INSERT INTO {table} ({cols}) VALUES ({values})"

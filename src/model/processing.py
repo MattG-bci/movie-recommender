@@ -1,5 +1,6 @@
 import torch
 from pydantic import BaseModel
+from uuid import UUID
 
 from schemas.movie import Movie, MovieRatingWithId
 from schemas.recommendation import MovieCandidate
@@ -26,7 +27,7 @@ def prepare_ids_for_recommendation(
 
 def map_recommender_movie_ids_to_db_ids(
     movies: list[Movie], recommended_movie_ids: torch.Tensor
-) -> list[int]:
+) -> list[UUID]:
     map_movie_id_to_recommender_id = get_model_id_to_recommender_id_mapping(
         movies, "id"
     )
@@ -41,7 +42,7 @@ def map_recommender_movie_ids_to_db_ids(
 
 
 def build_movie_candidates(
-    recommended_movie_ids: list[int],
+    recommended_movie_ids: list[UUID],
     cf_scores: torch.Tensor,
     movies: list[Movie],
 ) -> list[MovieCandidate]:
@@ -57,7 +58,7 @@ def build_movie_candidates(
 
 def get_model_id_to_recommender_id_mapping(
     models: list[BaseModel], id_field_name: str
-) -> dict[int, int]:
+) -> dict[UUID, int]:
     ids = {getattr(model, id_field_name) for model in models}
     ids = sorted(ids)
     return {model_id: idx for idx, model_id in enumerate(ids)}

@@ -45,8 +45,7 @@ class MovieCandidate(BaseModel):
 
 
 class MovieEmbedding(BaseModel):
-    movie_id: int
-    movie_uuid: UUID
+    movie_id: UUID | int
     recommendation_profile: str | None
     embedding_model: str | None
     embedding: list[float] | None

@@ -12,10 +12,10 @@ class UserIn(BaseModel):
 
 
 class UserWithUUID(UserIn):
-    id_uuid: UUID
+    id: UUID
 
 
 class User(UserIn):
-    id: int
+    id: UUID | int
     created_at: datetime.datetime
     updated_at: datetime.datetime

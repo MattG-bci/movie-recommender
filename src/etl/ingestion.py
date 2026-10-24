@@ -19,9 +19,7 @@ from settings import WebScraperSettings
 def add_uuid_to_movies(movies: list[MovieIn]) -> list[MovieWithUUID]:
     return [
         MovieWithUUID(
-            id_uuid=create_uuid_for_movie(
-                movie.title, movie.release_year, movie.director
-            ),
+            id=create_uuid_for_movie(movie.title, movie.release_year, movie.director),
             title=movie.title,
             release_year=movie.release_year,
             director=movie.director,
@@ -39,7 +37,7 @@ def add_uuid_to_movie_ratings(
 ) -> list[MovieRatingWithUUID]:
     return [
         MovieRatingWithUUID(
-            id_uuid=create_uuid_for_movie_rating(rating.user_uuid, rating.movie_uuid),
+            id=create_uuid_for_movie_rating(rating.user_id, rating.movie_id),
             user_id=rating.user_id,
             movie_id=rating.movie_id,
             rating=rating.rating,

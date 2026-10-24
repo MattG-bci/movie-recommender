@@ -153,7 +153,6 @@ async def backfill_movie_embeddings() -> None:
         embeddings = [
             MovieEmbedding(
                 movie_id=movie.id,
-                movie_uuid=movie.id_uuid,
                 recommendation_profile=profile,
                 embedding_model=embedding_settings.MODEL,
                 embedding=vector,
