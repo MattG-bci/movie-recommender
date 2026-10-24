@@ -5,7 +5,7 @@ import dspy
 from fastapi import APIRouter, HTTPException
 
 from api.poster_service import PosterBudget, PosterCache, resolve_posters
-from model.llm_rerank import recommend_movies
+from model.hybrid_recommender import recommend_movies
 from schemas.movie import MovieOut
 from schemas.recommendation import (
     RecommendationInput,
@@ -56,7 +56,6 @@ async def post_recommendations(
         username=payload.username,
         prompt=payload.prompt,
         image=image,
-        exploration=payload.exploration,
         top_k_recommendations=payload.top_k,
     )
 

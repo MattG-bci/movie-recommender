@@ -33,6 +33,7 @@ async def test_movie_metadata(fake_site_url):
     assert "Science Fiction" in matrix.genres
     assert "Keanu Reeves" in matrix.actors
     assert len(matrix.actors) <= 5
+    assert matrix.description == "A hacker discovers that reality is a simulated world."
 
     inception = movie_map["Inception"]
     assert inception.release_year == 2010

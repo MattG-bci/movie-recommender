@@ -1,4 +1,5 @@
 import logging
+from uuid import UUID
 
 import asyncpg
 import psycopg2
@@ -7,9 +8,14 @@ from pydantic import BaseModel
 
 from typing import Any
 
-from schemas.movie import MovieRatingIn, Movie, MovieRatingWithId, MovieRating
-from schemas.users import UserIn, User
-from schemas.recommendation import UserProfile
+from schemas.movie import (
+    Movie,
+    MovieRatingWithId,
+    MovieRatingWithUUID,
+    MovieRating,
+)
+from schemas.users import User, UserWithUUID
+from schemas.recommendation import MovieEmbedding, UserProfile
 from settings import DBSettings
 
 
@@ -51,14 +57,19 @@ class DatabaseConnector(BaseModel):
         await self.connection.close()
 
 
-async def insert_usernames(conn: asyncpg.Connection, usernames: list[UserIn]) -> None:
+async def insert_usernames(
+    conn: asyncpg.Connection, usernames: list[UserWithUUID]
+) -> None:
     logging.info(f"Inserting {len(usernames)} usernames to the database...")
     if not usernames:
         logging.info("No new usernames to upsert.")
         return
 
+    column_names = list(usernames[0].model_dump().keys())
+    placeholders = ", ".join(f"${i + 1}" for i in range(len(column_names)))
+
     query = f"""
-        INSERT INTO users ({", ".join(list(usernames[0].model_dump().keys()))}) VALUES ($1)
+        INSERT INTO users ({", ".join(column_names)}) VALUES ({placeholders})
     """
 
     params = [list(data.model_dump().values()) for data in usernames]
@@ -69,7 +80,7 @@ async def insert_usernames(conn: asyncpg.Connection, usernames: list[UserIn]) ->
 
 
 async def upsert_movie_ratings(
-    conn: asyncpg.Connection, movie_ratings: list[MovieRatingIn]
+    conn: asyncpg.Connection, movie_ratings: list[MovieRatingWithUUID]
 ) -> None:
     logging.info(f"Upserting {len(movie_ratings)} movie ratings to the database...")
     await upsert_to_db(
@@ -109,11 +120,54 @@ async def fetch_usernames_from_db(conn: asyncpg.Connection) -> list[User]:
 
 
 async def fetch_movies_from_db(conn: asyncpg.Connection) -> list[Movie]:
-    query = (
-        "SELECT id, title, release_year, genres, director, country, actors FROM movies"
-    )
+    query = "SELECT id, title, release_year, genres, director, country, actors, description FROM movies"
     rows = await conn.fetch(query)
     return [Movie(**dict(row)) for row in rows]
+
+
+async def fetch_movie_embeddings(conn: asyncpg.Connection) -> list[MovieEmbedding]:
+    rows = await conn.fetch(
+        """
+        SELECT
+            movies.id AS movie_id,
+            movie_embeddings.recommendation_profile,
+            movie_embeddings.embedding_model,
+            movie_embeddings.embedding
+        FROM movies
+        LEFT JOIN movie_embeddings
+            ON movie_embeddings.movie_id = movies.id
+        """
+    )
+    return [MovieEmbedding(**dict(row)) for row in rows]
+
+
+async def upsert_movie_embeddings(
+    conn: asyncpg.Connection, movie_embeddings: list[MovieEmbedding]
+) -> None:
+    if not movie_embeddings:
+        return
+    await conn.executemany(
+        """
+        INSERT INTO movie_embeddings (
+            movie_id, recommendation_profile, embedding_model, embedding
+        )
+        VALUES ($1, $2, $3, $4)
+        ON CONFLICT (movie_id)
+        DO UPDATE SET
+            recommendation_profile = EXCLUDED.recommendation_profile,
+            embedding_model = EXCLUDED.embedding_model,
+            embedding = EXCLUDED.embedding
+        """,
+        [
+            (
+                item.movie_id,
+                item.recommendation_profile,
+                item.embedding_model,
+                item.embedding,
+            )
+            for item in movie_embeddings
+        ],
+    )
 
 
 async def fetch_movies_page(
@@ -123,7 +177,7 @@ async def fetch_movies_page(
     search: str | None = None,
 ) -> list[Movie]:
     query = """
-    SELECT id, title, release_year, genres, director, country, actors
+    SELECT id, title, release_year, genres, director, country, actors, description
     FROM movies
     WHERE ($3::text IS NULL OR title ILIKE '%' || $3 || '%')
     ORDER BY title ASC, id ASC
@@ -133,9 +187,9 @@ async def fetch_movies_page(
     return [Movie(**dict(row)) for row in rows]
 
 
-async def fetch_movie_by_id(conn: asyncpg.Connection, movie_id: int) -> Movie | None:
+async def fetch_movie_by_id(conn: asyncpg.Connection, movie_id: UUID) -> Movie | None:
     query = """
-    SELECT id, title, release_year, genres, director, country, actors
+    SELECT id, title, release_year, genres, director, country, actors, description
     FROM movies
     WHERE id = $1
     """
@@ -175,7 +229,7 @@ async def fetch_movie_ratings_from_db(
 
 async def fetch_movie_ratings_from_db_for_movie(
     conn: asyncpg.Connection,
-    movie_id: int,
+    movie_id: UUID,
     limit: int,
 ) -> list[MovieRatingWithId]:
     query = "SELECT id, user_id, movie_id, rating FROM movie_ratings WHERE movie_id = $1 LIMIT $2"

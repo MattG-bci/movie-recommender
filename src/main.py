@@ -8,7 +8,7 @@ import logging
 import torch
 
 from model.train import train_recommender
-from model.llm_rerank import recommend_movies
+from model.hybrid_recommender import backfill_movie_embeddings, recommend_movies
 
 from schemas.modelling import PATH_TO_MODEL_WEIGHTS
 from schemas.recommendation import RecommendationInput
@@ -39,14 +39,14 @@ async def run_usernames_ingestion() -> None:
 
 @app.command()
 @async_typer_command
-async def run_movies_ingestion() -> None:
-    await ingest_movies()
+async def run_ratings_ingestion() -> None:
+    await ingest_movie_ratings()
 
 
 @app.command()
 @async_typer_command
-async def run_ratings_ingestion() -> None:
-    await ingest_movie_ratings()
+async def run_movie_ingestion() -> None:
+    await ingest_movies()
 
 
 @app.command()
@@ -70,18 +70,24 @@ async def run_recommender_training(save_model: bool = True) -> None:
 @async_typer_command
 async def run_movie_recommendation(
     username: str,
-    img_path: str | None,
-    exploration: float = 0.3,
+    img_path: str | None = None,
     prompt: str = "I am a bit lonely now. I need something light-hearted",
 ) -> None:
     image = dspy.Image(img_path) if img_path else None
     recommendation_input = RecommendationInput(
-        username=username, image=image, prompt=prompt, exploration=exploration
+        username=username, image=image, prompt=prompt
     )
     recommended_movies = await recommend_movies(recommendation_input)
     logger.info(
-        f"Here is top {recommendation_input.top_k_recommendations} movie recommendations after reranking: {recommended_movies}"
+        f"Here are the top {recommendation_input.top_k_recommendations} movie recommendations: {recommended_movies}"
     )
+
+
+@app.command()
+@async_typer_command
+async def run_movie_embedding_backfill() -> None:
+    """Create persisted profiles and embeddings outside the request path."""
+    await backfill_movie_embeddings()
 
 
 if __name__ == "__main__":

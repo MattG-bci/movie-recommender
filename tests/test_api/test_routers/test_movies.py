@@ -53,7 +53,9 @@ def test_get_movies__limit_above_max_returns_422(api_url):
 
 
 def test_get_movie__returns_full_metadata(api_url):
-    out = requests.get(f"{api_url}/movies/1")
+    movies = requests.get(f"{api_url}/movies").json()["items"]
+    movie_id = next(movie["id"] for movie in movies if movie["title"] == "test_movie1")
+    out = requests.get(f"{api_url}/movies/{movie_id}")
     body = out.json()
     assert out.status_code == 200
     assert body["title"] == "test_movie1"
@@ -66,7 +68,7 @@ def test_get_movie__returns_full_metadata(api_url):
 
 
 def test_get_movie__unknown_id_returns_404(api_url):
-    out = requests.get(f"{api_url}/movies/999999")
+    out = requests.get(f"{api_url}/movies/00000000-0000-0000-0000-000000000999")
     assert out.status_code == 404
 
 

@@ -14,10 +14,10 @@ verify-db:
     cd sqitch && sqitch verify -d movie_recommender
 
 pipeline *ARGS:
-    python3 src/main.py {{ARGS}}
+    poetry run python3 src/main.py {{ARGS}}
 
 api:
-    uv run uvicorn api.app:app --reload
+    poetry run uvicorn api.app:app --reload
 
 test-mobile:
     cd mobile && flutter test

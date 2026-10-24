@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from uuid import UUID
 
 
 class MovieIn(BaseModel):
@@ -8,16 +9,22 @@ class MovieIn(BaseModel):
     country: str
     actors: list[str]
     genres: list[str]
+    description: str | None = None
+
+
+class MovieWithUUID(MovieIn):
+    id: UUID
 
 
 class Movie(BaseModel):
-    id: int
+    id: UUID | int
     title: str
     release_year: int
     genres: list[str]
     director: str
     country: str
     actors: list[str]
+    description: str | None = None
 
 
 class MovieOut(Movie):
@@ -34,14 +41,24 @@ class MoviePage(BaseModel):
 class MovieRating(BaseModel):
     username: str
     movie_name: str
-    rating: float
+    rating: int
 
 
 class MovieRatingIn(BaseModel):
-    user_id: int
-    movie_id: int
-    rating: float
+    user_id: UUID | int
+    movie_id: UUID | int
+    rating: int
 
 
-class MovieRatingWithId(MovieRatingIn):
-    id: int
+class MovieRatingWithUUID(BaseModel):
+    id: UUID
+    user_id: UUID | int
+    movie_id: UUID | int
+    rating: int
+
+
+class MovieRatingWithId(BaseModel):
+    id: UUID | int
+    user_id: UUID | int
+    movie_id: UUID | int
+    rating: int

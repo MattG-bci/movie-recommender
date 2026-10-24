@@ -7,3 +7,5 @@
 19102025_create_extra_columns_to_movies_table 2025-10-19T21:26:02Z Matt <root@Mateuszs-MBP.mynet> # Add columns to movies table
 21102025_add_constraints 2025-10-21T20:23:21Z Matt <root@Mateuszs-MBP.mynet> # Add constraints to tables
 03092026_add_uuid_columns 2026-09-03T17:53:57Z Matt <root@Mateuszs-MacBook-Pro.local> # Add UUID columns for idenitifiers
+19102026_add_movie_recommendation_embeddings 2026-10-19T12:00:00Z Matt <root@Mateuszs-MacBook-Pro.local> # Add stored movie profiles and embeddings
+24102026_promote_uuid_ids 2026-10-24T12:00:00Z Matt <root@Mateuszs-MacBook-Pro.local> # Promote UUID identifiers to primary keys

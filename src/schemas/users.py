@@ -1,6 +1,7 @@
 import datetime
 
 from pydantic import BaseModel
+from uuid import UUID
 
 
 class UserIn(BaseModel):
@@ -10,7 +11,11 @@ class UserIn(BaseModel):
     __hash__ = object.__hash__
 
 
+class UserWithUUID(UserIn):
+    id: UUID
+
+
 class User(UserIn):
-    id: int
+    id: UUID | int
     created_at: datetime.datetime
     updated_at: datetime.datetime

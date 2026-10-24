@@ -36,6 +36,34 @@ async def test_fetch_usernames_from_db(db_service: DBSettings):
 
 
 @pytest.mark.asyncio
+async def test_sqitch_uuid_id_migration_removes_legacy_integer_ids(
+    db_service: DBSettings,
+):
+    async with DatabaseConnector(db_settings=db_service) as conn:
+        columns = await conn.fetch(
+            """
+            SELECT table_name, column_name, data_type
+            FROM information_schema.columns
+            WHERE table_schema = 'public'
+              AND table_name IN ('users', 'movies', 'movie_ratings')
+              AND column_name IN ('id', 'id_uuid', 'user_id', 'movie_id')
+            ORDER BY table_name, column_name
+            """
+        )
+
+    actual = {
+        (row["table_name"], row["column_name"]): row["data_type"] for row in columns
+    }
+    assert actual == {
+        ("movie_ratings", "id"): "uuid",
+        ("movie_ratings", "movie_id"): "uuid",
+        ("movie_ratings", "user_id"): "uuid",
+        ("movies", "id"): "uuid",
+        ("users", "id"): "uuid",
+    }
+
+
+@pytest.mark.asyncio
 async def test_sqitch_revert(db_service: DBSettings):
     admin_settings = db_service.model_copy()
     admin_settings.NAME = "postgres"

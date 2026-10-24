@@ -98,13 +98,12 @@ class RatingScraper(BaseModel):
 
     async def scrape_data(self) -> list[MovieRating]:
         results = [
-            await self.scrape_data_per_username(username.username)
+            (username.username, await self.scrape_data_per_username(username.username))
             for username in self.usernames
         ]
 
         movie_ratings = []
-        for user, user_ratings in zip(self.usernames, results):
-            username = user.username
+        for username, user_ratings in results:
             logger.info(f"Fetched {len(user_ratings)} ratings for user: {username}")
             for title, movie_rating in user_ratings:
                 movie_ratings.append(
@@ -242,6 +241,13 @@ class MovieScraper(BaseModel):
                 logger.info(f"Error while scraping movie details for '{title}': {e}")
                 continue
 
+            description_container = movie_soup.find("div", class_="truncate")
+            description = (
+                description_container.find("p").get_text(strip=True)
+                if description_container and description_container.find("p")
+                else None
+            )
+
             movies.append(
                 MovieIn(
                     title=title,
@@ -250,6 +256,7 @@ class MovieScraper(BaseModel):
                     actors=actors,
                     genres=genres,
                     country=country,
+                    description=description,
                 )
             )
         return movies

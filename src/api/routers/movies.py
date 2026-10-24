@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, Query
+from uuid import UUID
 
 from api.poster_service import PosterBudget, PosterCache, resolve_posters
 from etl.sql_queries import (
@@ -37,7 +38,7 @@ async def get_movies(
 
 
 @movies.get("/{movie_id}")
-async def get_movie(movie_id: int) -> MovieOut:
+async def get_movie(movie_id: UUID) -> MovieOut:
     async with DatabaseConnector() as conn:
         row = await fetch_movie_by_id(conn, movie_id)
 
