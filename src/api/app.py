@@ -6,6 +6,7 @@ from api.routers import (
     movies_router,
     users_router,
     recommendations_router,
+    imports_router,
 )
 
 app = FastAPI()
@@ -24,3 +25,4 @@ app.include_router(ratings_router, prefix="/ratings")
 app.include_router(movies_router, prefix="/movies")
 app.include_router(users_router, prefix="/users")
 app.include_router(recommendations_router, prefix="/recommendations")
+app.include_router(imports_router, prefix="/imports")

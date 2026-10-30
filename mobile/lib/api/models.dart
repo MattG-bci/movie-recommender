@@ -80,6 +80,26 @@ class AppUser {
   }
 }
 
+class LetterboxdImportResult {
+  const LetterboxdImportResult({
+    required this.ratedRows,
+    required this.importedRatings,
+    required this.unmatchedRows,
+  });
+
+  final int ratedRows;
+  final int importedRatings;
+  final int unmatchedRows;
+
+  factory LetterboxdImportResult.fromJson(Map<String, dynamic> json) {
+    return LetterboxdImportResult(
+      ratedRows: json['rated_rows'] as int,
+      importedRatings: json['imported_ratings'] as int,
+      unmatchedRows: json['unmatched_rows'] as int,
+    );
+  }
+}
+
 class Recommendation {
   const Recommendation({required this.movie, this.reason, this.matchScore});
 
