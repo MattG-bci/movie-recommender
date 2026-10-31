@@ -3,6 +3,7 @@ from .ratings import ratings as ratings_router  # noqa: F401
 from .movies import movies as movies_router  # noqa: F401
 from .users import users as users_router  # noqa: F401
 from .recommendations import recommendations as recommendations_router  # noqa: F401
+from .imports import imports as imports_router  # noqa: F401
 
 
-__all__ = ["healthcheck", "ratings", "movies", "users", "recommendations"]
+__all__ = ["healthcheck", "ratings", "movies", "users", "recommendations", "imports"]

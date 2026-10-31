@@ -294,6 +294,31 @@ def load_fixtures(settings: DBSettings):
             conn.commit()
 
 
+@pytest.fixture
+def delete_user_and_ratings(db_service):
+    """Remove a disposable API-ingestion user and its dependent ratings."""
+
+    def delete(username: str) -> None:
+        with psycopg2.connect(
+            host=db_service.HOST,
+            port=db_service.PORT,
+            user=db_service.USER,
+            password=db_service.PASS,
+            database=db_service.NAME,
+        ) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    """
+                    DELETE FROM movie_ratings
+                    WHERE user_id = (SELECT id FROM users WHERE username = %s)
+                    """,
+                    (username,),
+                )
+                cursor.execute("DELETE FROM users WHERE username = %s", (username,))
+
+    return delete
+
+
 @pytest.fixture(scope="session")
 def api_url(docker_ip, docker_services, db_service):
     port = docker_services.port_for("test-api", 8080)

@@ -99,6 +99,25 @@ class ApiClient {
     return AppUser.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
   }
 
+  Future<LetterboxdImportResult> importLetterboxdExport({
+    required String username,
+    required List<int> bytes,
+    required String filename,
+  }) async {
+    final uri = Uri.parse('$baseUrl/imports/letterboxd/$username');
+    final request = http.MultipartRequest('POST', uri)
+      ..files.add(http.MultipartFile.fromBytes('export', bytes, filename: filename));
+    final streamed = await request.send().timeout(
+          _recommendTimeout,
+          onTimeout: () => throw ApiTimeoutException(_recommendTimeout),
+        );
+    final response = await http.Response.fromStream(streamed);
+    _throwIfNotOk(response);
+    return LetterboxdImportResult.fromJson(
+      jsonDecode(response.body) as Map<String, dynamic>,
+    );
+  }
+
   Future<List<Recommendation>> recommend({
     required String username,
     required String prompt,

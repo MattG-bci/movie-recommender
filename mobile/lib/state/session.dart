@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../api/api_client.dart';
+import '../api/models.dart';
 
 const _usernameKey = 'username';
 
@@ -52,5 +53,23 @@ class Session extends ChangeNotifier {
     await _prefs.remove(_usernameKey);
     _username = null;
     notifyListeners();
+  }
+
+  Future<LetterboxdImportResult> importLetterboxdExport({
+    required String username,
+    required List<int> bytes,
+    required String filename,
+  }) async {
+    final result = await _api.importLetterboxdExport(
+      username: username,
+      bytes: bytes,
+      filename: filename,
+    );
+    // The import endpoint creates the local user when this is their first use.
+    final importedUsername = username.trim().toLowerCase();
+    await _prefs.setString(_usernameKey, importedUsername);
+    _username = importedUsername;
+    notifyListeners();
+    return result;
   }
 }
