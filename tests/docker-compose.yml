@@ -27,7 +27,7 @@ services:
       - SCRAPER_RATINGS_PAGE=http://fake-site/
       - SCRAPER_MOVIES_PAGE=http://fake-site/films/popular/
     ports:
-      - "8090:8080"
+      - "8080:8080"
     depends_on:
       - test-db
       - fake-site
