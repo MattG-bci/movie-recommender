@@ -20,8 +20,6 @@ services:
       - DB_PASS=postgres
       - DB_NAME=test
       - OMDB_API_KEY=${OMDB_API_KEY:-}
-      # Exercise API ingestion against the in-stack site fixture rather than
-      # an external Letterboxd host.
       - SCRAPER_BASE_URL=http://fake-site/
       - SCRAPER_USERNAME_PAGE=http://fake-site/members/popular/this/week/
       - SCRAPER_RATINGS_PAGE=http://fake-site/
