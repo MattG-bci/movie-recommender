@@ -172,3 +172,4 @@ cython_debug/
 !mobile/lib/
 mobile/build/
 mobile/.dart_tool/
+.azure
