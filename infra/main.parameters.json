@@ -10,6 +10,9 @@
     },
     "registryName": {
       "value": "${registryName}"
+    },
+    "databaseAdministratorPassword": {
+      "value": "${POSTGRES_ADMIN_PASSWORD}"
     }
   }
 }
