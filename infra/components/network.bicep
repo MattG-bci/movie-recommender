@@ -14,33 +14,43 @@ resource virtualNetwork 'Microsoft.Network/virtualNetworks@2024-05-01' = {
         '10.20.0.0/16'
       ]
     }
-    subnets: [
+    // Use Azure-provided DNS. Private PostgreSQL records are resolved through
+    // the linked Private DNS zone below, so a DNS Private Resolver is not needed.
+    dhcpOptions: {
+      dnsServers: []
+    }
+  }
+}
+
+// Manage project subnets as child resources rather than an inline VNet subnet
+// collection. This preserves unrelated subnets (such as an existing GatewaySubnet)
+// during incremental deployments.
+resource containerAppsSubnet 'Microsoft.Network/virtualNetworks/subnets@2024-05-01' = {
+  parent: virtualNetwork
+  name: 'container-apps'
+  properties: {
+    addressPrefix: '10.20.0.0/27'
+    delegations: [
       {
-        name: 'container-apps'
+        name: 'container-apps-delegation'
         properties: {
-          addressPrefix: '10.20.0.0/27'
-          delegations: [
-            {
-              name: 'container-apps-delegation'
-              properties: {
-                serviceName: 'Microsoft.App/environments'
-              }
-            }
-          ]
+          serviceName: 'Microsoft.App/environments'
         }
       }
+    ]
+  }
+}
+
+resource postgresSubnet 'Microsoft.Network/virtualNetworks/subnets@2024-05-01' = {
+  parent: virtualNetwork
+  name: 'postgres'
+  properties: {
+    addressPrefix: '10.20.1.0/28'
+    delegations: [
       {
-        name: 'postgres'
+        name: 'postgres-delegation'
         properties: {
-          addressPrefix: '10.20.1.0/28'
-          delegations: [
-            {
-              name: 'postgres-delegation'
-              properties: {
-                serviceName: 'Microsoft.DBforPostgreSQL/flexibleServers'
-              }
-            }
-          ]
+          serviceName: 'Microsoft.DBforPostgreSQL/flexibleServers'
         }
       }
     ]
@@ -62,16 +72,6 @@ resource privateDnsZoneLink 'Microsoft.Network/privateDnsZones/virtualNetworkLin
       id: virtualNetwork.id
     }
   }
-}
-
-resource containerAppsSubnet 'Microsoft.Network/virtualNetworks/subnets@2024-05-01' existing = {
-  parent: virtualNetwork
-  name: 'container-apps'
-}
-
-resource postgresSubnet 'Microsoft.Network/virtualNetworks/subnets@2024-05-01' existing = {
-  parent: virtualNetwork
-  name: 'postgres'
 }
 
 output containerAppsSubnetId string = containerAppsSubnet.id

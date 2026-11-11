@@ -8,6 +8,12 @@ param databaseName string
 param databaseUser string
 @secure()
 param databasePassword string
+@description('Application (client) ID of the Microsoft Entra app registration representing this API.')
+param entraApplicationClientId string
+@description('Microsoft Entra user or application object IDs allowed to access this API.')
+param entraAllowedPrincipalIds array
+@description('Fully qualified image reference hosted in the project Azure Container Registry.')
+param imageName string
 
 var serviceName = 'movie-recommender'
 var appName = '${serviceName}-${toLower(uniqueString(resourceGroup().id))}'
@@ -78,7 +84,7 @@ resource app 'Microsoft.App/containerApps@2024-03-01' = {
       containers: [
         {
           name: serviceName
-          image: 'mcr.microsoft.com/dotnet/samples:aspnetapp'
+          image: imageName
           resources: {
             cpu: json('0.5')
             memory: '1Gi'
@@ -107,6 +113,48 @@ resource app 'Microsoft.App/containerApps@2024-03-01' = {
           ]
         }
       ]
+    }
+  }
+}
+
+// The API remains publicly addressable so laptops and iPhones can reach it without
+// a VPN. Container Apps performs Entra authentication before requests reach the
+// application container; callers must also be on this explicit object-ID allowlist.
+resource authConfig 'Microsoft.App/containerApps/authConfigs@2024-03-01' = {
+  parent: app
+  name: 'current'
+  properties: {
+    platform: {
+      enabled: true
+      runtimeVersion: '~1'
+    }
+    globalValidation: {
+      unauthenticatedClientAction: 'Return401'
+    }
+    httpSettings: {
+      requireHttps: true
+    }
+    identityProviders: {
+      azureActiveDirectory: {
+        enabled: true
+        registration: {
+          clientId: entraApplicationClientId
+          openIdIssuer: '${environment().authentication.loginEndpoint}${tenant().tenantId}/v2.0'
+        }
+        validation: {
+          // The client ID is the standard v2 access-token audience. The API URI
+          // supports clients configured to request the default exposed API scope.
+          allowedAudiences: [
+            entraApplicationClientId
+            'api://${entraApplicationClientId}'
+          ]
+          defaultAuthorizationPolicy: {
+            allowedPrincipals: {
+              identities: entraAllowedPrincipalIds
+            }
+          }
+        }
+      }
     }
   }
 }

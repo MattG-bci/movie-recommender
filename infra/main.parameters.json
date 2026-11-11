@@ -13,6 +13,17 @@
     },
     "databaseAdministratorPassword": {
       "value": "${POSTGRES_ADMIN_PASSWORD}"
+    },
+    "entraApplicationClientId": {
+      "value": "${ENTRA_APPLICATION_CLIENT_ID}"
+    },
+    "entraAllowedPrincipalIds": {
+      "value": [
+        "${ENTRA_ALLOWED_PRINCIPAL_ID}"
+      ]
+    },
+    "movieRecommenderImageName": {
+      "value": "${SERVICE_MOVIE_RECOMMENDER_IMAGE_NAME}"
     }
   }
 }

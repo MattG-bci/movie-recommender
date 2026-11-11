@@ -4,6 +4,12 @@ param storageAccountName string
 param registryName string
 @secure()
 param databaseAdministratorPassword string
+@description('Application (client) ID of the single-tenant Microsoft Entra app registration that protects the API.')
+param entraApplicationClientId string
+@description('Microsoft Entra object IDs permitted to call the API. Include the developer/test user object ID.')
+param entraAllowedPrincipalIds array
+@description('Fully qualified image name published by azd to Azure Container Registry.')
+param movieRecommenderImageName string = ''
 
 var resourceToken = toLower(uniqueString(subscription().id, resourceGroup().id, environmentName))
 var databaseServerName = 'pg${resourceToken}'
@@ -68,6 +74,11 @@ module movieRecommenderApp './components/container-app.bicep' = {
     databaseName: postgres.outputs.database
     databaseUser: postgres.outputs.administratorLogin
     databasePassword: databaseAdministratorPassword
+    entraApplicationClientId: entraApplicationClientId
+    entraAllowedPrincipalIds: entraAllowedPrincipalIds
+    imageName: empty(movieRecommenderImageName)
+      ? '${containerRegistry.outputs.loginServer}/movie-recommender:latest'
+      : movieRecommenderImageName
   }
 }
 
