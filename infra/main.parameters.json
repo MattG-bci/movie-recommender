@@ -21,9 +21,6 @@
       "value": [
         "${ENTRA_ALLOWED_PRINCIPAL_ID}"
       ]
-    },
-    "movieRecommenderImageName": {
-      "value": "${SERVICE_MOVIE_RECOMMENDER_IMAGE_NAME}"
     }
   }
 }

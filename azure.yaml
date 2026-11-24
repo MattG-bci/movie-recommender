@@ -4,15 +4,33 @@ name: movie-recommender
 metadata:
     template: azd-init@1.37.2
 services:
-    movie-recommender:
+    api:
         project: .
         host: containerapp
         language: python
         docker:
             path: Dockerfile
+    web:
+        project: .
+        host: containerapp
+        # azd requires a recognized language even though Dockerfile.web does
+        # all packaging. JavaScript is a supported neutral web classification.
+        language: js
+        hooks:
+            prepackage:
+                shell: sh
+                dir: mobile
+                run: flutter build web --release --dart-define=API_BASE_URL=
+        docker:
+            path: Dockerfile.web
 resources:
-    movie-recommender:
+    api:
         type: host.containerapp
         uses:
-            - movie-recommender
+            - api
         port: 8080
+    web:
+        type: host.containerapp
+        uses:
+            - web
+        port: 80

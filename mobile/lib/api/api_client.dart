@@ -53,16 +53,25 @@ String describeApiError(Object error) {
 }
 
 class ApiClient {
-  ApiClient({http.Client? client, this.baseUrl = apiBaseUrl})
-      : _client = client ?? http.Client();
+  ApiClient({http.Client? client, String? baseUrl, this.accessToken})
+      : _client = client ?? http.Client(),
+        baseUrl = baseUrl ?? apiBaseUrl;
 
   final http.Client _client;
   final String baseUrl;
+  final String? accessToken;
 
   // A hybrid recommendation can include semantic image analysis and embedding
   // lookups, so it may take longer than ordinary catalogue requests.
   static const Duration _recommendTimeout = Duration(seconds: 240);
   static const Duration _defaultTimeout = Duration(seconds: 15);
+
+  Uri _apiUri(String path, {Map<String, String>? queryParameters}) {
+    // On web, an empty base resolves against the page currently displayed in
+    // Safari/Chrome. Native builds retain their explicit API host.
+    final base = baseUrl.isEmpty ? Uri.base : Uri.parse(baseUrl);
+    return base.resolve(path).replace(queryParameters: queryParameters);
+  }
 
   Future<MoviePage> fetchMovies({
     int limit = 50,
@@ -74,8 +83,8 @@ class ApiClient {
       'offset': '$offset',
       if (search != null) 'search': search,
     };
-    final uri = Uri.parse('$baseUrl/movies').replace(queryParameters: params);
-    final response = await _client.get(uri).timeout(_defaultTimeout,
+    final uri = _apiUri('/movies', queryParameters: params);
+    final response = await _get(uri).timeout(_defaultTimeout,
         onTimeout: () => throw ApiTimeoutException(_defaultTimeout));
     _throwIfNotOk(response);
     return MoviePage.fromJson(
@@ -84,16 +93,16 @@ class ApiClient {
   }
 
   Future<Movie> fetchMovie(String id) async {
-    final uri = Uri.parse('$baseUrl/movies/$id');
-    final response = await _client.get(uri).timeout(_defaultTimeout,
+    final uri = _apiUri('/movies/$id');
+    final response = await _get(uri).timeout(_defaultTimeout,
         onTimeout: () => throw ApiTimeoutException(_defaultTimeout));
     _throwIfNotOk(response);
     return Movie.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
   }
 
   Future<AppUser> fetchUser(String username) async {
-    final uri = Uri.parse('$baseUrl/users/$username');
-    final response = await _client.get(uri).timeout(_defaultTimeout,
+    final uri = _apiUri('/users/$username');
+    final response = await _get(uri).timeout(_defaultTimeout,
         onTimeout: () => throw ApiTimeoutException(_defaultTimeout));
     _throwIfNotOk(response);
     return AppUser.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
@@ -104,9 +113,11 @@ class ApiClient {
     required List<int> bytes,
     required String filename,
   }) async {
-    final uri = Uri.parse('$baseUrl/imports/letterboxd/$username');
+    final uri = _apiUri('/imports/letterboxd/$username');
     final request = http.MultipartRequest('POST', uri)
-      ..files.add(http.MultipartFile.fromBytes('export', bytes, filename: filename));
+      ..files.add(
+          http.MultipartFile.fromBytes('export', bytes, filename: filename));
+    if (accessToken != null) request.headers.addAll(_authHeaders);
     final streamed = await request.send().timeout(
           _recommendTimeout,
           onTimeout: () => throw ApiTimeoutException(_recommendTimeout),
@@ -124,27 +135,41 @@ class ApiClient {
     String? imageBase64,
     int topK = 10,
   }) async {
-    final uri = Uri.parse('$baseUrl/recommendations');
+    final uri = _apiUri('/recommendations');
     final body = <String, dynamic>{
       'username': username,
       'prompt': prompt,
       'top_k': topK,
       if (imageBase64 != null) 'image_base64': imageBase64,
     };
-    final response = await _client
-        .post(
-          uri,
-          headers: const {'Content-Type': 'application/json'},
-          body: jsonEncode(body),
-        )
-        .timeout(_recommendTimeout,
-            onTimeout: () => throw ApiTimeoutException(_recommendTimeout));
+    final response = await _postJson(uri, body).timeout(_recommendTimeout,
+        onTimeout: () => throw ApiTimeoutException(_recommendTimeout));
     _throwIfNotOk(response);
     final decoded = jsonDecode(response.body) as List;
     return decoded
         .map((item) => Recommendation.fromJson(item as Map<String, dynamic>))
         .toList();
   }
+
+  Map<String, String> get _authHeaders =>
+      accessToken == null ? const {} : {'Authorization': 'Bearer $accessToken'};
+
+  Future<http.Response> _get(Uri uri) => accessToken == null
+      ? _client.get(uri)
+      : _client.get(uri, headers: _authHeaders);
+
+  Future<http.Response> _postJson(Uri uri, Map<String, dynamic> body) =>
+      accessToken == null
+          ? _client.post(
+              uri,
+              headers: const {'Content-Type': 'application/json'},
+              body: jsonEncode(body),
+            )
+          : _client.post(
+              uri,
+              headers: {'Content-Type': 'application/json', ..._authHeaders},
+              body: jsonEncode(body),
+            );
 
   void _throwIfNotOk(http.Response response) {
     if (response.statusCode >= 200 && response.statusCode < 300) {

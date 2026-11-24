@@ -15,8 +15,11 @@ param entraAllowedPrincipalIds array
 @description('Fully qualified image reference hosted in the project Azure Container Registry.')
 param imageName string
 
-var serviceName = 'movie-recommender'
-var appName = '${serviceName}-${toLower(uniqueString(resourceGroup().id))}'
+// Keep this Azure resource name stable, while exposing it to azd as `api`.
+// That updates the existing deployed Container App instead of creating a
+// duplicate backend during the topology change.
+var serviceName = 'api'
+var appName = 'movie-recommender-${toLower(uniqueString(resourceGroup().id))}'
 var registryIdentityName = 'id-${serviceName}-${toLower(uniqueString(resourceGroup().id))}'
 
 resource registry 'Microsoft.ContainerRegistry/registries@2023-07-01' existing = {
@@ -129,6 +132,8 @@ resource authConfig 'Microsoft.App/containerApps/authConfigs@2024-03-01' = {
       runtimeVersion: '~1'
     }
     globalValidation: {
+      // The web SPA obtains an API access token using OAuth PKCE and sends it
+      // as a bearer token. Redirects here would return Entra HTML to API calls.
       unauthenticatedClientAction: 'Return401'
     }
     httpSettings: {

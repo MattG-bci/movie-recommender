@@ -8,8 +8,6 @@ param databaseAdministratorPassword string
 param entraApplicationClientId string
 @description('Microsoft Entra object IDs permitted to call the API. Include the developer/test user object ID.')
 param entraAllowedPrincipalIds array
-@description('Fully qualified image name published by azd to Azure Container Registry.')
-param movieRecommenderImageName string = ''
 
 var resourceToken = toLower(uniqueString(subscription().id, resourceGroup().id, environmentName))
 var databaseServerName = 'pg${resourceToken}'
@@ -76,13 +74,32 @@ module movieRecommenderApp './components/container-app.bicep' = {
     databasePassword: databaseAdministratorPassword
     entraApplicationClientId: entraApplicationClientId
     entraAllowedPrincipalIds: entraAllowedPrincipalIds
-    imageName: empty(movieRecommenderImageName)
-      ? '${containerRegistry.outputs.loginServer}/movie-recommender:latest'
-      : movieRecommenderImageName
+    // Keep provisioning independent of package pushes. `azd deploy api`
+    // replaces this already-existing bootstrap image with the current API image.
+    imageName: '${containerRegistry.outputs.loginServer}/movie-recommender:latest'
+  }
+}
+
+module webApp './components/web-container-app.bicep' = {
+  name: 'movie-recommender-web-deployment'
+  params: {
+    location: location
+    environmentName: environmentName
+    containerAppEnvironmentId: containerAppEnvironment.outputs.id
+    registryName: registryName
+    registryLoginServer: containerRegistry.outputs.loginServer
+    apiUri: movieRecommenderApp.outputs.uri
+    entraApplicationClientId: entraApplicationClientId
+    // A public bootstrap image lets `azd provision` create the new frontend
+    // Container App before the first private web image has been pushed. The
+    // subsequent `azd deploy web` replaces it with the generated frontend.
+    imageName: 'nginx:1.27-alpine'
   }
 }
 
 output CONTAINER_REGISTRY_LOGIN_SERVER string = containerRegistry.outputs.loginServer
-output SERVICE_MOVIE_RECOMMENDER_IMAGE_NAME string = '${containerRegistry.outputs.loginServer}/movie-recommender:latest'
-output SERVICE_MOVIE_RECOMMENDER_URI string = movieRecommenderApp.outputs.uri
+output SERVICE_API_IMAGE_NAME string = '${containerRegistry.outputs.loginServer}/api:latest'
+output SERVICE_API_URI string = movieRecommenderApp.outputs.uri
+output SERVICE_WEB_IMAGE_NAME string = '${containerRegistry.outputs.loginServer}/web:latest'
+output SERVICE_WEB_URI string = webApp.outputs.uri
 output POSTGRES_HOST string = postgres.outputs.host
