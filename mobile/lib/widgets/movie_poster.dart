@@ -17,12 +17,12 @@ class MoviePoster extends StatelessWidget {
   final double borderRadius;
 
   static const List<List<Color>> _gradients = [
-    [Color(0xFF6750A4), Color(0xFF9A82DB)],
-    [Color(0xFF386A20), Color(0xFF6DBE45)],
-    [Color(0xFFB3261E), Color(0xFFE46962)],
-    [Color(0xFF00696F), Color(0xFF4FD8E0)],
-    [Color(0xFF984061), Color(0xFFE893AF)],
-    [Color(0xFF7C5800), Color(0xFFF2BB4A)],
+    [Color(0xFF12315A), Color(0xFF2D70B7)],
+    [Color(0xFF172B4D), Color(0xFF536FA6)],
+    [Color(0xFF123C4A), Color(0xFF337F94)],
+    [Color(0xFF292252), Color(0xFF5C5AA5)],
+    [Color(0xFF1B314B), Color(0xFF4277A8)],
+    [Color(0xFF112A41), Color(0xFF477FBC)],
   ];
 
   List<Color> get _fallbackColors =>

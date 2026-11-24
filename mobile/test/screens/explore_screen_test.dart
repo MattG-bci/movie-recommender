@@ -49,6 +49,13 @@ void main() {
     // Each title appears in the fallback poster and beneath it.
     expect(find.textContaining('The Matrix'), findsNWidgets(2));
     expect(find.textContaining('Inception'), findsNWidgets(2));
+    final grid = tester.widget<SliverGrid>(find.byType(SliverGrid));
+    expect(grid.gridDelegate, isA<SliverGridDelegateWithMaxCrossAxisExtent>());
+    expect(
+      (grid.gridDelegate as SliverGridDelegateWithMaxCrossAxisExtent)
+          .maxCrossAxisExtent,
+      168,
+    );
   });
 
   testWidgets('test_exploreScreen__showsEmptyStateWhenSearchHasNoResults',

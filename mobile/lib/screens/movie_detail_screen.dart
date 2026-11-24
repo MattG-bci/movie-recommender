@@ -12,40 +12,71 @@ class MovieDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            pinned: true,
-            expandedHeight: 360,
-            flexibleSpace: FlexibleSpaceBar(
-              background: Hero(
-                tag: 'movie-poster-${movie.id}',
-                child: MoviePoster(movie: movie, borderRadius: 0),
-              ),
-            ),
-          ),
-          SliverPadding(
-            padding: const EdgeInsets.all(20),
-            sliver: SliverList(
-              delegate: SliverChildListDelegate([
-                Text(
-                  '${movie.title} (${movie.releaseYear})',
-                  style: Theme.of(context).textTheme.headlineMedium,
-                ),
-                if (movie.description != null &&
-                    movie.description!.isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  Text(movie.description!),
+      appBar: AppBar(),
+      body: SafeArea(
+        top: false,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final posterWidth = constraints.maxWidth >= 700 ? 180.0 : 120.0;
+            final horizontalPadding = constraints.maxWidth >= 700
+                ? (constraints.maxWidth - 640) / 2
+                : 20.0;
+            return SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(
+                  horizontalPadding, 16, horizontalPadding, 32),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        width: posterWidth,
+                        child: Hero(
+                          tag: 'movie-poster-${movie.id}',
+                          child: MoviePoster(movie: movie, borderRadius: 10),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(movie.title,
+                                style:
+                                    Theme.of(context).textTheme.headlineSmall),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${movie.releaseYear}',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleMedium
+                                  ?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
+                                  ),
+                            ),
+                            if (movie.description != null &&
+                                movie.description!.isNotEmpty) ...[
+                              const SizedBox(height: 12),
+                              Text(movie.description!),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  MetadataChipsRow(label: 'Genres', values: movie.genres),
+                  MetadataChipsRow(label: 'Director', values: [movie.director]),
+                  MetadataChipsRow(label: 'Country', values: [movie.country]),
+                  MetadataChipsRow(label: 'Cast', values: movie.actors),
                 ],
-                const SizedBox(height: 16),
-                MetadataChipsRow(label: 'Genres', values: movie.genres),
-                MetadataChipsRow(label: 'Director', values: [movie.director]),
-                MetadataChipsRow(label: 'Country', values: [movie.country]),
-                MetadataChipsRow(label: 'Cast', values: movie.actors),
-              ]),
-            ),
-          ),
-        ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }

@@ -36,8 +36,8 @@ class MovieRecommenderApp extends StatelessWidget {
       create: (_) => Session(api: api, prefs: prefs)..restore(),
       child: MaterialApp(
         title: 'Movie Recommender',
-        theme: buildAppTheme(Brightness.light),
         darkTheme: buildAppTheme(Brightness.dark),
+        themeMode: ThemeMode.dark,
         home: _RootScreen(api: api, images: _images ?? ImagePickerService()),
       ),
     );

@@ -6,10 +6,9 @@ import '../state/movies_controller.dart';
 import '../widgets/movie_poster.dart';
 import 'movie_detail_screen.dart';
 
-/// A `CustomScrollView` with a pinned search field and a two-column
-/// `SliverGrid` of poster tiles at 2:3 aspect ratio, plus a first-load
-/// skeleton, an empty state for no search results, and a retry state on
-/// error.
+/// A responsive browse grid. Phones retain two poster columns; wider screens
+/// add compact, capped cards instead of stretching two posters across the
+/// viewport.
 class ExploreScreen extends StatefulWidget {
   const ExploreScreen({super.key, required this.api});
 
@@ -57,15 +56,24 @@ class _ExploreScreenState extends State<ExploreScreen> {
                 controller: _scrollController,
                 slivers: [
                   SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: TextField(
-                        decoration: const InputDecoration(
-                          hintText: 'Search movies',
-                          prefixIcon: Icon(Icons.search),
-                        ),
-                        onChanged: controller.setSearch,
-                      ),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final horizontalInset =
+                            ((constraints.maxWidth - 1280) / 2)
+                                    .clamp(0.0, double.infinity) +
+                                16;
+                        return Padding(
+                          padding: EdgeInsets.fromLTRB(
+                              horizontalInset, 16, horizontalInset, 12),
+                          child: TextField(
+                            decoration: const InputDecoration(
+                              hintText: 'Search movies',
+                              prefixIcon: Icon(Icons.search),
+                            ),
+                            onChanged: controller.setSearch,
+                          ),
+                        );
+                      },
                     ),
                   ),
                   if (controller.error != null)
@@ -84,45 +92,64 @@ class _ExploreScreenState extends State<ExploreScreen> {
                       child: Center(child: Text('No movies found')),
                     )
                   else
-                    SliverPadding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      sliver: SliverGrid(
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          childAspectRatio: 2 / 3,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                        ),
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) {
-                            final movie = controller.movies[index];
-                            return GestureDetector(
-                              onTap: () {
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (_) => MovieDetailScreen(movie: movie),
+                    SliverLayoutBuilder(
+                      builder: (context, constraints) {
+                        final horizontalInset =
+                            ((constraints.crossAxisExtent - 1280) / 2)
+                                    .clamp(0.0, double.infinity) +
+                                16;
+                        return SliverPadding(
+                          padding: EdgeInsets.fromLTRB(
+                              horizontalInset, 4, horizontalInset, 24),
+                          sliver: SliverGrid(
+                            gridDelegate:
+                                const SliverGridDelegateWithMaxCrossAxisExtent(
+                              maxCrossAxisExtent: 168,
+                              childAspectRatio: .55,
+                              crossAxisSpacing: 14,
+                              mainAxisSpacing: 20,
+                            ),
+                            delegate: SliverChildBuilderDelegate(
+                              (context, index) {
+                                final movie = controller.movies[index];
+                                return GestureDetector(
+                                  onTap: () {
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            MovieDetailScreen(movie: movie),
+                                      ),
+                                    );
+                                  },
+                                  child: Hero(
+                                    tag: 'movie-poster-${movie.id}',
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Expanded(
+                                            child: MoviePoster(
+                                                movie: movie,
+                                                borderRadius: 10)),
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          movie.title,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .titleSmall,
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 );
                               },
-                              child: Hero(
-                                tag: 'movie-poster-${movie.id}',
-                                child: Column(
-                                  children: [
-                                    Expanded(child: MoviePoster(movie: movie)),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      movie.title,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                          childCount: controller.movies.length,
-                        ),
-                      ),
+                              childCount: controller.movies.length,
+                            ),
+                          ),
+                        );
+                      },
                     ),
                 ],
               );
