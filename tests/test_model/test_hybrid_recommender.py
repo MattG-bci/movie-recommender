@@ -87,9 +87,9 @@ async def test_recommend_movies_scores_all_movies_without_reranking(monkeypatch)
         RecommendationInput(username="user", prompt="funny", top_k_recommendations=2)
     )
 
-    assert [item.movie.id for item in result] == [1, 2]
+    assert [item.movie.id for item in result] == [2, 1]
     assert result[0].reason is None
-    assert result[0].match_score == pytest.approx((10 * 0.55 + 1 * 0.25) / 0.8)
+    assert result[0].match_score == pytest.approx((1 * 0.30 + 10 * 0.70) / 1.0)
 
 
 def test_validate_embeddings_rejects_missing_or_mismatched_values():
@@ -161,6 +161,45 @@ def test_extract_image_query_uses_image_semantics(monkeypatch):
     assert "rainy neon city" in query
     assert "Mood: melancholic" in query
     assert "Avoid: Action" in query
+
+
+def test_extract_text_query_keeps_a_single_keyword(monkeypatch):
+    monkeypatch.setattr(
+        hybrid_recommender,
+        "get_lm",
+        lambda: pytest.fail("A keyword should not need intent extraction"),
+    )
+
+    assert hybrid_recommender.extract_text_query("  disgusting  ") == "disgusting"
+
+
+def test_extract_text_query_converts_circumstances_to_movie_attributes(monkeypatch):
+    class _IntentExtractor:
+        def __init__(self, signature):
+            assert signature is hybrid_recommender.ExtractPromptIntent
+
+        def __call__(self, *, prompt):
+            assert (
+                prompt
+                == "I am feeling a bit down, I need something that will cheer me up"
+            )
+            return type(
+                "Intent",
+                (),
+                {
+                    "search_query": (
+                        "uplifting, funny, warm, optimistic, light-hearted comfort "
+                        "movie; avoid bleak, tragic, depressing films"
+                    )
+                },
+            )()
+
+    monkeypatch.setattr(hybrid_recommender.dspy, "ChainOfThought", _IntentExtractor)
+    monkeypatch.setattr(hybrid_recommender, "get_lm", lambda: None)
+
+    assert hybrid_recommender.extract_text_query(
+        "I am feeling a bit down, I need something that will cheer me up"
+    ).startswith("uplifting, funny, warm")
 
 
 @pytest.mark.asyncio

@@ -60,3 +60,21 @@ class ExtractImageSemantics(dspy.Signature):
     output: ImageSemantics = dspy.OutputField(
         desc="A concise movie-search query inferred from the image, including mood, energy, setting or visual style, and suggested or avoided genres"
     )
+
+
+class ExtractPromptIntent(dspy.Signature):
+    """Translate a user's request into language that appears in movie metadata."""
+
+    prompt: str = dspy.InputField(
+        desc="The user's free-form request for a movie recommendation"
+    )
+
+    search_query: str = dspy.OutputField(
+        desc=(
+            "A concise movie-search query. State the desired mood, tone, themes, "
+            "energy, genres, and any things to avoid. Preserve explicit constraints "
+            "and do not mention the user's personal situation. For example, a request "
+            "to be cheered up should become 'uplifting, funny, warm, optimistic, "
+            "light-hearted comfort movie; avoid bleak, tragic, or depressing films'."
+        )
+    )

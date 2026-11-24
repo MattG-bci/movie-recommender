@@ -23,6 +23,7 @@ from model.semantic import (
 )
 from schemas.movie import Movie
 from schemas.recommendation import (
+    ExtractPromptIntent,
     MovieEmbedding,
     RecommendationInput,
     RecommendationOut,
@@ -44,7 +45,7 @@ async def recommend_movies(
     movie_ids = map_recommender_movie_ids_to_db_ids(movies, predicted_ids)
     cf_scores = dict(zip(movie_ids, (float(value) for value in values)))
 
-    text_query = recommendation_input.prompt.strip()
+    text_query = extract_text_query(recommendation_input.prompt)
     image_query = extract_image_query(recommendation_input.image)
     if not text_query and not image_query:
         return format_recommendations(
@@ -75,6 +76,8 @@ async def recommend_movies(
         cf_scores,
         text_scores=semantic_scores.get("text"),
         image_scores=semantic_scores.get("image"),
+        cf_weight=0.30 if text_query else 0.55,
+        text_weight=0.70 if text_query else 0.25,
     )
     return format_recommendations(
         movies, scores, recommendation_input.top_k_recommendations
@@ -128,6 +131,16 @@ def extract_image_query(image: dspy.Image | None) -> str | None:
     if semantics.avoid_genres:
         parts.append(f"Avoid: {', '.join(semantics.avoid_genres)}")
     return ". ".join(parts)
+
+
+def extract_text_query(prompt: str) -> str:
+    query = prompt.strip()
+    if not query or len(query.split()) == 1:
+        return query
+
+    with dspy.context(lm=get_lm()):
+        intent = dspy.ChainOfThought(ExtractPromptIntent)(prompt=query)
+    return intent.search_query.strip() or query
 
 
 def format_recommendations(
