@@ -7,7 +7,7 @@ optional photo + exploration slider -> ranked results with a match score).
 ## Requirements
 
 - Flutter >= 3.22, Dart >= 3.4
-- iOS and Android targets only (no web/desktop)
+- iOS, Android, and web targets
 - Bundle id: `com.movierecommender.mobile`
 
 ## Running
@@ -22,6 +22,21 @@ flutter run --dart-define=API_BASE_URL=http://localhost:8080
 the host machine's LAN IP instead of `localhost`, and both platforms need a
 cleartext-HTTP exemption unless the API is fronted by TLS (the API has no TLS
 of its own).
+
+## Web deployment
+
+`azd` packages this project as a separate `web` Container App. Its
+`prepackage` hook creates the Flutter web assets, and its small Nginx image
+gets the public API Container App URL and Entra values at startup. The browser
+uses Entra authorization-code flow with PKCE, then sends its access token to
+the separately deployed API Container App.
+
+To preview the web build locally:
+
+```bash
+flutter build web --dart-define=API_BASE_URL=http://localhost:8080
+python3 -m http.server --directory build/web 8080
+```
 
 ## Testing
 

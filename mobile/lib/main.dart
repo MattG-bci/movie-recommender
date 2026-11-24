@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'api/api_client.dart';
+import 'auth/browser_auth.dart';
 import 'screens/home_shell.dart';
 import 'screens/login_screen.dart';
 import 'services/image_source_service.dart';
@@ -12,7 +13,8 @@ import 'theme.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final prefs = await SharedPreferences.getInstance();
-  final api = ApiClient();
+  final auth = await BrowserAuth.bootstrap();
+  final api = ApiClient(accessToken: auth.accessToken);
   runApp(MovieRecommenderApp(api: api, prefs: prefs));
 }
 

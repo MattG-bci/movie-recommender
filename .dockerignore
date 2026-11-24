@@ -4,5 +4,6 @@
 __pycache__/
 *.py[cod]
 
-# The Flutter client is built separately and is not needed by the Python API image.
-mobile/
+# Flutter source and its prebuilt web assets are required by the Docker build.
+# The local Dart tool cache is not.
+mobile/.dart_tool/

@@ -1,0 +1,26 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "environmentName": {
+      "value": "${AZURE_ENV_NAME}"
+    },
+    "storageAccountName": {
+      "value": "${storageAccountName}"
+    },
+    "registryName": {
+      "value": "${registryName}"
+    },
+    "databaseAdministratorPassword": {
+      "value": "${POSTGRES_ADMIN_PASSWORD}"
+    },
+    "entraApplicationClientId": {
+      "value": "${ENTRA_APPLICATION_CLIENT_ID}"
+    },
+    "entraAllowedPrincipalIds": {
+      "value": [
+        "${ENTRA_ALLOWED_PRINCIPAL_ID}"
+      ]
+    }
+  }
+}

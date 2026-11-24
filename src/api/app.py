@@ -15,7 +15,10 @@ app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    # The separate browser frontend sends bearer tokens, rather than cookies.
+    # Wildcard origins are valid in that mode and keep the generated Container
+    # Apps hostname from needing to be known at API build time.
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
